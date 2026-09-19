@@ -1,0 +1,13 @@
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true
+  simple-git-hooks: true
+  unrs-resolver: true
+  workerd: true
+minimumReleaseAgeExclude:
+  - '@cloudflare/vite-plugin@1.56.0'
+  - '@types/node@26.6.2'
+  - dotenv@18.0.1
+  - eslint@10.11.0
+  - miniflare@5.20260918.0-alpha
+  - wrangler@4.135.0
