@@ -1,5 +1,12 @@
 import { relations, sql } from 'drizzle-orm'
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import {
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text
+} from 'drizzle-orm/sqlite-core'
+import { ulid } from 'ulid'
 
 export const user = sqliteTable('user', {
   id: text('id').primaryKey(),
@@ -115,9 +122,57 @@ export const twoFactor = sqliteTable(
   table => [index('two_factor_userId_idx').on(table.userId)]
 )
 
+export const note = sqliteTable(
+  'note',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => ulid().toLowerCase()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    title: text('title').default('').notNull(),
+    markdown: text('markdown').default('').notNull(),
+    deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  table => [
+    index('note_userId_createdAt_idx').on(table.userId, table.createdAt),
+    index('note_userId_updatedAt_idx').on(table.userId, table.updatedAt),
+    index('note_userId_deletedAt_idx').on(table.userId, table.deletedAt),
+  ]
+)
+
+export const noteView = sqliteTable(
+  'note_view',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    noteId: text('note_id')
+      .notNull()
+      .references(() => note.id, { onDelete: 'cascade' }),
+    viewedAt: integer('viewed_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+  },
+  table => [
+    primaryKey({ columns: [table.userId, table.noteId] }),
+    index('note_view_userId_viewedAt_idx').on(table.userId, table.viewedAt),
+  ]
+)
+
 export const userRelations = relations(user, ({ many, one }) => ({
   sessions: many(session),
   accounts: many(account),
+  notes: many(note),
+  noteViews: many(noteView),
   // The plugin keeps a single row per user and updates it in place.
   twoFactor: one(twoFactor, {
     fields: [user.id],
@@ -143,5 +198,24 @@ export const twoFactorRelations = relations(twoFactor, ({ one }) => ({
   user: one(user, {
     fields: [twoFactor.userId],
     references: [user.id],
+  }),
+}))
+
+export const noteRelations = relations(note, ({ one, many }) => ({
+  user: one(user, {
+    fields: [note.userId],
+    references: [user.id],
+  }),
+  views: many(noteView),
+}))
+
+export const noteViewRelations = relations(noteView, ({ one }) => ({
+  user: one(user, {
+    fields: [noteView.userId],
+    references: [user.id],
+  }),
+  note: one(note, {
+    fields: [noteView.noteId],
+    references: [note.id],
   }),
 }))

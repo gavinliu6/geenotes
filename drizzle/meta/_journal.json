@@ -15,6 +15,20 @@
       "when": 1790054718374,
       "tag": "0001_mushy_union_jack",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790140535231,
+      "tag": "0002_fat_sir_ram",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1790177360728,
+      "tag": "0003_icy_ogun",
+      "breakpoints": true
     }
   ]
 }
