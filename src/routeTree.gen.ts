@@ -15,7 +15,11 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedAppRouteImport } from './routes/_authed/_app'
 import { Route as SiteIndexRouteImport } from './routes/_site/index'
 import { Route as AuthedAppHomeRouteImport } from './routes/_authed/_app/home'
+import { Route as AuthedAppNotesRouteImport } from './routes/_authed/_app/notes'
+import { Route as AuthedAppSettingsRouteImport } from './routes/_authed/_app/settings'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthedAppNotesIndexRouteImport } from './routes/_authed/_app/notes/index'
+import { Route as AuthedAppNotesNoteIdRouteImport } from './routes/_authed/_app/notes/$noteId'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -44,23 +48,50 @@ const AuthedAppHomeRoute = AuthedAppHomeRouteImport.update({
   path: '/home',
   getParentRoute: () => AuthedAppRoute,
 } as any)
+const AuthedAppNotesRoute = AuthedAppNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => AuthedAppRoute,
+} as any)
+const AuthedAppSettingsRoute = AuthedAppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthedAppRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedAppNotesIndexRoute = AuthedAppNotesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedAppNotesRoute,
+} as any)
+const AuthedAppNotesNoteIdRoute = AuthedAppNotesNoteIdRouteImport.update({
+  id: '/$noteId',
+  path: '/$noteId',
+  getParentRoute: () => AuthedAppNotesRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof SiteIndexRoute
   '/login': typeof LoginRoute
   '/home': typeof AuthedAppHomeRoute
+  '/notes': typeof AuthedAppNotesRouteWithChildren
+  '/settings': typeof AuthedAppSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/notes/$noteId': typeof AuthedAppNotesNoteIdRoute
+  '/notes/': typeof AuthedAppNotesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof SiteIndexRoute
   '/login': typeof LoginRoute
   '/home': typeof AuthedAppHomeRoute
+  '/settings': typeof AuthedAppSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/notes/$noteId': typeof AuthedAppNotesNoteIdRoute
+  '/notes': typeof AuthedAppNotesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -70,13 +101,32 @@ export interface FileRoutesById {
   '/_authed/_app': typeof AuthedAppRouteWithChildren
   '/_site/': typeof SiteIndexRoute
   '/_authed/_app/home': typeof AuthedAppHomeRoute
+  '/_authed/_app/notes': typeof AuthedAppNotesRouteWithChildren
+  '/_authed/_app/settings': typeof AuthedAppSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_authed/_app/notes/$noteId': typeof AuthedAppNotesNoteIdRoute
+  '/_authed/_app/notes/': typeof AuthedAppNotesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/home' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/home'
+    | '/notes'
+    | '/settings'
+    | '/api/auth/$'
+    | '/notes/$noteId'
+    | '/notes/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/home' | '/api/auth/$'
+  to:
+    | '/'
+    | '/login'
+    | '/home'
+    | '/settings'
+    | '/api/auth/$'
+    | '/notes/$noteId'
+    | '/notes'
   id:
     | '__root__'
     | '/_authed'
@@ -85,7 +135,11 @@ export interface FileRouteTypes {
     | '/_authed/_app'
     | '/_site/'
     | '/_authed/_app/home'
+    | '/_authed/_app/notes'
+    | '/_authed/_app/settings'
     | '/api/auth/$'
+    | '/_authed/_app/notes/$noteId'
+    | '/_authed/_app/notes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -139,6 +193,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAppHomeRouteImport
       parentRoute: typeof AuthedAppRoute
     }
+    '/_authed/_app/notes': {
+      id: '/_authed/_app/notes'
+      path: '/notes'
+      fullPath: '/notes'
+      preLoaderRoute: typeof AuthedAppNotesRouteImport
+      parentRoute: typeof AuthedAppRoute
+    }
+    '/_authed/_app/settings': {
+      id: '/_authed/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthedAppSettingsRouteImport
+      parentRoute: typeof AuthedAppRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -146,15 +214,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/_app/notes/': {
+      id: '/_authed/_app/notes/'
+      path: '/'
+      fullPath: '/notes/'
+      preLoaderRoute: typeof AuthedAppNotesIndexRouteImport
+      parentRoute: typeof AuthedAppNotesRoute
+    }
+    '/_authed/_app/notes/$noteId': {
+      id: '/_authed/_app/notes/$noteId'
+      path: '/$noteId'
+      fullPath: '/notes/$noteId'
+      preLoaderRoute: typeof AuthedAppNotesNoteIdRouteImport
+      parentRoute: typeof AuthedAppNotesRoute
+    }
   }
 }
 
+interface AuthedAppNotesRouteChildren {
+  AuthedAppNotesNoteIdRoute: typeof AuthedAppNotesNoteIdRoute
+  AuthedAppNotesIndexRoute: typeof AuthedAppNotesIndexRoute
+}
+
+const AuthedAppNotesRouteChildren: AuthedAppNotesRouteChildren = {
+  AuthedAppNotesNoteIdRoute: AuthedAppNotesNoteIdRoute,
+  AuthedAppNotesIndexRoute: AuthedAppNotesIndexRoute,
+}
+
+const AuthedAppNotesRouteWithChildren = AuthedAppNotesRoute._addFileChildren(
+  AuthedAppNotesRouteChildren,
+)
+
 interface AuthedAppRouteChildren {
   AuthedAppHomeRoute: typeof AuthedAppHomeRoute
+  AuthedAppNotesRoute: typeof AuthedAppNotesRouteWithChildren
+  AuthedAppSettingsRoute: typeof AuthedAppSettingsRoute
 }
 
 const AuthedAppRouteChildren: AuthedAppRouteChildren = {
   AuthedAppHomeRoute: AuthedAppHomeRoute,
+  AuthedAppNotesRoute: AuthedAppNotesRouteWithChildren,
+  AuthedAppSettingsRoute: AuthedAppSettingsRoute,
 }
 
 const AuthedAppRouteWithChildren = AuthedAppRoute._addFileChildren(
