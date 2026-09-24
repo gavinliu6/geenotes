@@ -1,12 +1,147 @@
-import { sqliteTable, integer, text } from 'drizzle-orm/sqlite-core'
-import { sql } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-export const todos = sqliteTable('todos', {
-  id: integer({ mode: 'number' }).primaryKey({
-    autoIncrement: true,
-  }),
-  title: text().notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).default(
-    sql`(unixepoch())`,
-  ),
+export const user = sqliteTable('user', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+  emailVerified: integer('email_verified', { mode: 'boolean' })
+    .default(false)
+    .notNull(),
+  image: text('image'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+  twoFactorEnabled: integer('two_factor_enabled', { mode: 'boolean' })
+    .default(false)
+    .notNull(),
+  status: text('status', { enum: ['waiting', 'active', 'suspended'] })
+    .default('waiting')
+    .notNull(),
 })
+
+export const session = sqliteTable(
+  'session',
+  {
+    id: text('id').primaryKey(),
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+    token: text('token').notNull().unique(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    ipAddress: text('ip_address'),
+    userAgent: text('user_agent'),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+  },
+  table => [index('session_userId_idx').on(table.userId)]
+)
+
+export const account = sqliteTable(
+  'account',
+  {
+    id: text('id').primaryKey(),
+    accountId: text('account_id').notNull(),
+    providerId: text('provider_id').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    accessToken: text('access_token'),
+    refreshToken: text('refresh_token'),
+    idToken: text('id_token'),
+    accessTokenExpiresAt: integer('access_token_expires_at', {
+      mode: 'timestamp_ms',
+    }),
+    refreshTokenExpiresAt: integer('refresh_token_expires_at', {
+      mode: 'timestamp_ms',
+    }),
+    scope: text('scope'),
+    password: text('password'),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  table => [index('account_userId_idx').on(table.userId)]
+)
+
+export const verification = sqliteTable(
+  'verification',
+  {
+    id: text('id').primaryKey(),
+    identifier: text('identifier').notNull(),
+    value: text('value').notNull(),
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  table => [index('verification_identifier_idx').on(table.identifier)]
+)
+
+// The export key has to stay `twoFactor`: the Drizzle adapter resolves a Better
+// Auth model to `schema[modelName]`, and the plugin's model name is `twoFactor`.
+export const twoFactor = sqliteTable(
+  'two_factor',
+  {
+    id: text('id').primaryKey(),
+    secret: text('secret').notNull(),
+    backupCodes: text('backup_codes').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    // Stays false between enabling TOTP and entering the first valid code, so
+    // an abandoned setup never counts as a usable second factor.
+    verified: integer('verified', { mode: 'boolean' }).default(true).notNull(),
+    failedVerificationCount: integer('failed_verification_count')
+      .default(0)
+      .notNull(),
+    lockedUntil: integer('locked_until', { mode: 'timestamp_ms' }),
+  },
+  table => [index('two_factor_userId_idx').on(table.userId)]
+)
+
+export const userRelations = relations(user, ({ many, one }) => ({
+  sessions: many(session),
+  accounts: many(account),
+  // The plugin keeps a single row per user and updates it in place.
+  twoFactor: one(twoFactor, {
+    fields: [user.id],
+    references: [twoFactor.userId],
+  }),
+}))
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, {
+    fields: [session.userId],
+    references: [user.id],
+  }),
+}))
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, {
+    fields: [account.userId],
+    references: [user.id],
+  }),
+}))
+
+export const twoFactorRelations = relations(twoFactor, ({ one }) => ({
+  user: one(user, {
+    fields: [twoFactor.userId],
+    references: [user.id],
+  }),
+}))
