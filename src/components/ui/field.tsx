@@ -1,0 +1,252 @@
+'use client'
+
+import type React from 'react'
+import { useSlotId } from 'react-aria/private/utils/useId'
+import * as CheckboxPrimitives from 'react-aria-components/Checkbox'
+import { composeRenderProps } from 'react-aria-components/composeRenderProps'
+import * as FieldErrorPrimitives from 'react-aria-components/FieldError'
+import * as LabelPrimitives from 'react-aria-components/Label'
+import { Provider } from 'react-aria-components/slots'
+import * as TextPrimitives from 'react-aria-components/Text'
+import type { VariantProps } from 'tailwind-variants'
+import { tv } from 'tailwind-variants'
+
+import { Text } from '@/components/ui/text'
+
+const fieldVariants = tv({
+  slots: {
+    fieldset: '',
+    legend: '',
+    fieldGroup:
+      `
+        group/field-group @container/field-group flex w-full flex-col gap-5
+        has-data-checkbox:gap-3
+        has-data-radio:gap-3
+        has-[[data-checkbox]_[data-label]]:gap-2
+        has-[[data-radio]_[data-label]]:gap-2
+      `,
+    field:
+      `
+        flex w-full gap-2
+        invalid:has-data-[slot=field-error]:**:data-[slot=description]:hidden
+      `,
+    fieldContent: 'flex flex-col gap-1',
+    label:
+      `
+        inline-flex items-center gap-px text-sm select-ui
+        peer-disabled:cursor-disabled
+        peer-disabled:text-(--disabled-fg,currentColor)
+        in-disabled:cursor-disabled
+        in-disabled:text-(--disabled-fg,currentColor)
+        in-data-invalid:text-fg-danger
+        in-data-required:after:ml-0.5 in-data-required:after:text-fg-danger
+        in-data-required:after:content-['*']
+        [&_svg]:size-3
+      `,
+    description:
+      `
+        text-sm text-fg-muted
+        last:mt-0
+        in-data-disabled:text-(--disabled-fg,var(--color-fg-muted))
+        nth-last-2:-mt-1
+      `,
+    fieldError: 'text-sm text-fg-danger',
+  },
+  variants: {
+    orientation: {
+      horizontal: {
+        field:
+          `
+            flex-row items-center gap-2
+            has-data-[slot=description]:items-start
+          `,
+      },
+      vertical: {
+        field: 'w-full flex-col gap-2',
+      },
+    },
+  },
+  defaultVariants: {
+    orientation: 'vertical',
+  },
+})
+
+const {
+  fieldset,
+  legend,
+  fieldGroup,
+  field,
+  fieldContent,
+  label,
+  description,
+  fieldError,
+} = fieldVariants()
+
+export { fieldVariants as fieldStyles }
+
+/* -------------------------------------------------------------------------- */
+
+interface FieldsetProps extends React.ComponentProps<'fieldset'> {}
+
+function Fieldset({ className, ...props }: FieldsetProps) {
+  return (
+    <fieldset
+      data-slot="fieldset"
+      className={fieldset({ className })}
+      {...props}
+    />
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface LegendProps extends React.ComponentProps<'legend'> {}
+
+function Legend({ className, ...props }: LegendProps) {
+  return (
+    <legend data-slot="legend" className={legend({ className })} {...props} />
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface FieldGroupProps extends React.ComponentProps<'div'> {}
+
+function FieldGroup({ className, ...props }: FieldGroupProps) {
+  return (
+    <div
+      data-slot="field-group"
+      className={fieldGroup({ className })}
+      {...props}
+    />
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface FieldProps
+  extends React.ComponentProps<'div'>, VariantProps<typeof fieldVariants> {}
+
+const Field = ({ children, className, orientation, ...props }: FieldProps) => {
+  const inputId = useSlotId()
+  const descriptionId = useSlotId()
+  return (
+    <div
+      data-slot="field"
+      className={field({ className, orientation })}
+      {...props}
+    >
+      <Provider
+        values={[
+          [
+            CheckboxPrimitives.CheckboxContext,
+            {
+              'id': inputId,
+              'aria-describedby': descriptionId,
+            },
+          ],
+          [LabelPrimitives.LabelContext, { htmlFor: inputId }],
+          [
+            TextPrimitives.TextContext,
+            { slot: 'description', id: descriptionId },
+          ],
+        ]}
+      >
+        {children}
+      </Provider>
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface FieldContentProps extends React.ComponentProps<'div'> {}
+
+const FieldContent = ({ className, ...props }: FieldContentProps) => {
+  return (
+    <div
+      data-slot="field-content"
+      className={fieldContent({ className })}
+      {...props}
+    />
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface LabelProps extends React.ComponentProps<
+  typeof LabelPrimitives.Label
+> {}
+
+const Label = ({ children, className, ...props }: LabelProps) => {
+  return (
+    <LabelPrimitives.Label
+      data-slot="label"
+      data-label=""
+      className={label({ className })}
+      {...props}
+    >
+      {children}
+    </LabelPrimitives.Label>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface DescriptionProps extends Omit<
+  React.ComponentProps<typeof Text>,
+  'slot'
+> {}
+
+const Description = ({ className, ...props }: DescriptionProps) => {
+  return (
+    <Text
+      data-slot="description"
+      data-description=""
+      slot="description"
+      className={description({ className })}
+      {...props}
+    />
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface FieldErrorProps extends React.ComponentProps<
+  typeof FieldErrorPrimitives.FieldError
+> {}
+const FieldError = ({ className, ...props }: FieldErrorProps) => {
+  return (
+    <FieldErrorPrimitives.FieldError
+      data-slot="field-error"
+      data-field-error=""
+      className={composeRenderProps(className, className =>
+        fieldError({ className })
+      )}
+      {...props}
+    />
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+export type {
+  DescriptionProps,
+  FieldContentProps,
+  FieldErrorProps,
+  FieldGroupProps,
+  FieldProps,
+  FieldsetProps,
+  LabelProps,
+  LegendProps
+}
+export {
+  Description,
+  Field,
+  FieldContent,
+  FieldError,
+  FieldGroup,
+  Fieldset,
+  Label,
+  Legend
+}

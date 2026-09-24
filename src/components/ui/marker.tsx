@@ -1,0 +1,93 @@
+'use client'
+
+import type * as React from 'react'
+import { tv } from 'tailwind-variants'
+
+const markerVariants = tv({
+  slots: {
+    root: `
+      group/marker relative flex min-h-4 w-full items-center gap-2 text-left
+      text-sm text-fg-muted
+      **:[a]:underline **:[a]:underline-offset-3
+      **:[a]:hover:text-fg
+      **:[svg]:not-with-[size]:size-4
+    `,
+    icon: 'size-4 shrink-0',
+    content:
+      `
+        min-w-0 wrap-break-word
+        group-data-[variant=separator]/marker:flex-none
+        group-data-[variant=separator]/marker:text-center
+      `,
+  },
+  variants: {
+    variant: {
+      default: {},
+      separator: {
+        root: `
+          before:mr-1 before:h-px before:min-w-0 before:flex-1 before:bg-border
+          after:ml-1 after:h-px after:min-w-0 after:flex-1 after:bg-border
+        `,
+      },
+      border: {
+        root: 'border-b pb-2',
+      },
+    },
+  },
+  defaultVariants: {
+    variant: 'default',
+  },
+})
+
+const { root, icon, content } = markerVariants()
+
+/* -------------------------------------------------------------------------- */
+
+interface MarkerProps extends React.ComponentProps<'div'> {
+  variant?: 'default' | 'separator' | 'border'
+}
+
+const Marker = ({ className, variant = 'default', ...props }: MarkerProps) => {
+  return (
+    <div
+      data-marker=""
+      data-variant={variant}
+      className={root({ variant, className })}
+      {...props}
+    />
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface MarkerIconProps extends React.ComponentProps<'span'> {}
+
+const MarkerIcon = ({ className, ...props }: MarkerIconProps) => {
+  return (
+    <span
+      data-marker-icon=""
+      aria-hidden="true"
+      className={icon({ className })}
+      {...props}
+    />
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface MarkerContentProps extends React.ComponentProps<'span'> {}
+
+const MarkerContent = ({ className, ...props }: MarkerContentProps) => {
+  return (
+    <span
+      data-marker-content=""
+      className={content({ className })}
+      {...props}
+    />
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+export type { MarkerContentProps, MarkerIconProps, MarkerProps }
+export { Marker, MarkerContent, MarkerIcon }
