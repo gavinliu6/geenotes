@@ -3,5 +3,13 @@
   "name": "tanstack-start-app",
   "compatibility_date": "2026-09-18",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry"
+  "main": "@tanstack/react-start/server-entry",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "geenotes",
+      "database_id": "30bbcaf9-7f24-45a0-8d45-ad2f99241787",
+      "migrations_dir": "drizzle",
+    },
+  ],
 }
