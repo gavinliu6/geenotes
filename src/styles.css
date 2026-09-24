@@ -22,7 +22,7 @@
   --breakpoint-4xl: 120rem;
   --container-8xl: 90rem;
   --container-9xl: 100rem;
-  --font-heading: var(--font-serif);
+  --font-heading: var(--font-sans);
   --font-sans: 'Geist Variable', sans-serif;
   --font-serif: 'Noto Serif Variable', serif;
   --font-mono: 'Geist Mono Variable', monospace;
@@ -182,17 +182,17 @@
   --animate-loader-blades: loader-blades 0.8s steps(8, end) infinite;
   --animate-loader-dots: loader-dots 0.9s ease-in-out infinite;
   @keyframes loader-blades {
-  to {
-    transform: rotate(1turn);
+    to {
+      transform: rotate(1turn);
     }
   }
   @keyframes loader-dots {
-  0%,
-  100% {
-    opacity: 0.25;
+    0%,
+    100% {
+      opacity: 0.25;
     }
-  50% {
-    opacity: 1;
+    50% {
+      opacity: 1;
     }
   }
 }
@@ -324,6 +324,8 @@
   --chart-8: oklch(0.3595 0.0855 58.59);
   --card-border: var(--color-border);
   --overlay-border: var(--color-border);
+  --popover-alpha: 100%;
+  --popover-backdrop-filter: none;
   --scrollbar-width: thin;
   --scrollbar-color: oklch(0.9204 0.006 250) transparent;
 }
@@ -470,7 +472,9 @@
     cursor: pointer;
   }
   html {
-    @apply antialiased scroll-smooth font-sans;
+    @apply antialiased scroll-smooth overscroll-none font-sans;
+    text-autospace: normal;
+    text-spacing-trim: trim-start;
   }
   *:hover {
     scrollbar-color: var(--scrollbar-color-hover, var(--scrollbar-color, auto));
@@ -481,7 +485,6 @@
   h4,
   h5,
   h6 {
-    font-family: var(--font-heading);
     font-weight: var(--font-weight-heading, var(--font-weight-semibold));
     letter-spacing: var(--tracking-heading, 0);
   }
@@ -547,20 +550,20 @@
 }
 
 @utility skeleton {
-    position: relative;
-    overflow: hidden;
-    background-color: var(--color-muted);
-    background-image: var(--skeleton-image, none);
-    background-size: 300% 100%;
-    background-position: 100%;
-    background-repeat: no-repeat;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-muted);
+  background-image: var(--skeleton-image, none);
+  background-size: 300% 100%;
+  background-position: 100%;
+  background-repeat: no-repeat;
   &:where(img, video, canvas, svg) {
     content-visibility: hidden;
   }
 }
 
 @utility skeleton--shimmer {
-    --skeleton-image: linear-gradient(
+  --skeleton-image: linear-gradient(
     to right,
     var(--color-muted) 33%,
     color-mix(in oklab, var(--color-muted), var(--color-bg) 45%),
@@ -569,9 +572,9 @@
 }
 
 @utility skeleton--pulse {
-    --skeleton-image: none;
+  --skeleton-image: none;
 }
 
 @utility skeleton--none {
-    --skeleton-image: none;
+  --skeleton-image: none;
 }

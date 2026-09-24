@@ -253,12 +253,16 @@ function LoginPage() {
             "
             >
               <div className="mx-auto flex w-full max-w-lg flex-col px-6 py-12">
-                <div className="mb-8 flex flex-col gap-3 font-serif">
-                  <h1 className="text-center text-4xl font-light tracking-tight">
+                <div className="mb-8 flex flex-col gap-3">
+                  <h1 className="
+                    text-center font-serif text-4xl font-light tracking-tight
+                  "
+                  >
                     Sign in to your account
                   </h1>
                   <p className="
-                    relative mx-auto w-fit text-xl font-light text-balance
+                    relative mx-auto w-fit font-serif text-xl font-light
+                    text-balance
                     after:absolute after:inset-x-[-0.12em] after:top-[68%]
                     after:bottom-0 after:-z-1 after:bg-linear-to-r
                     after:from-yellow-300/45 after:to-transparent

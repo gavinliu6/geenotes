@@ -1,21 +1,43 @@
-"use client";
+'use client'
 
-import type * as React from "react";
-import { composeRenderProps } from "react-aria-components/composeRenderProps";
-import * as PopoverPrimitives from "react-aria-components/Popover";
-import * as TooltipPrimitives from "react-aria-components/Tooltip";
-import { type VariantProps, tv } from "tailwind-variants";
+import type * as React from 'react'
+import { composeRenderProps } from 'react-aria-components/composeRenderProps'
+import * as PopoverPrimitives from 'react-aria-components/Popover'
+import * as TooltipPrimitives from 'react-aria-components/Tooltip'
+import type { VariantProps } from 'tailwind-variants'
+import { tv } from 'tailwind-variants'
 
 const tooltipVariants = tv({
   slots: {
     content:
-      "w-fit max-w-xs origin-(--trigger-anchor-point) rounded-md px-3 py-1.5 text-center text-xs forced-color-adjust-none outline-none border bg-popover text-fg shadow-(--shadow-popover,var(--shadow-md)) transition-[transform,opacity,scale] duration-enter ease-enter will-change-[transform,opacity,scale] exiting:duration-exit exiting:ease-out motion-reduce:transition-none entering:scale-95 entering:opacity-0 exiting:scale-95 exiting:opacity-0 [--slide-offset:--spacing(0.5)] entering:transform-(--origin) exiting:transform-(--origin) placement-left:[--origin:translateX(var(--slide-offset))] placement-right:[--origin:translateX(calc(var(--slide-offset)*-1))] placement-top:[--origin:translateY(var(--slide-offset))] placement-bottom:[--origin:translateY(calc(var(--slide-offset)*-1))]",
+      `
+        w-fit max-w-xs origin-(--trigger-anchor-point) rounded-md border
+        bg-popover px-3 py-1.5 text-center text-xs text-fg
+        shadow-(--shadow-popover,var(--shadow-md))
+        transition-[transform,opacity,scale] duration-enter ease-enter
+        will-change-[transform,opacity,scale] forced-color-adjust-none
+        outline-none [--slide-offset:--spacing(0.5)]
+        motion-reduce:transition-none
+        placement-left:[--origin:translateX(var(--slide-offset))]
+        placement-right:[--origin:translateX(calc(var(--slide-offset)*-1))]
+        placement-top:[--origin:translateY(var(--slide-offset))]
+        placement-bottom:[--origin:translateY(calc(var(--slide-offset)*-1))]
+        entering:scale-95 entering:transform-(--origin) entering:opacity-0
+        exiting:scale-95 exiting:transform-(--origin) exiting:opacity-0
+        exiting:duration-exit exiting:ease-out
+      `,
     arrow:
-      "block [&>svg]:size-2.5 placement-left:[&>svg]:-rotate-90 placement-right:[&>svg]:rotate-90 placement-bottom:[&>svg]:rotate-180 placement-left:-ml-px placement-right:-mr-px placement-top:-mt-px placement-bottom:-mb-px [&>svg]:fill-popover [&>svg]:stroke-border",
+      `
+        block
+        [&>svg]:size-2.5 [&>svg]:fill-popover [&>svg]:stroke-border
+        placement-left:[&>svg]:-rotate-90
+        placement-right:[&>svg]:rotate-90
+        placement-bottom:[&>svg]:rotate-180
+      `,
   },
-});
+})
 
-const { content, arrow } = tooltipVariants();
+const { content, arrow } = tooltipVariants()
 
 /* -------------------------------------------------------------------------- */
 interface TooltipProps extends React.ComponentProps<
@@ -28,15 +50,15 @@ const Tooltip = ({ delay = 700, closeDelay = 0, ...props }: TooltipProps) => (
     closeDelay={closeDelay}
     {...props}
   />
-);
+)
 
 /* -------------------------------------------------------------------------- */
 
 interface TooltipContentProps
   extends
-    React.ComponentProps<typeof TooltipPrimitives.Tooltip>,
-    VariantProps<typeof tooltipVariants> {
-  hideArrow?: boolean;
+  React.ComponentProps<typeof TooltipPrimitives.Tooltip>,
+  VariantProps<typeof tooltipVariants> {
+  hideArrow?: boolean
 }
 
 function TooltipContent({
@@ -49,24 +71,24 @@ function TooltipContent({
     <TooltipPrimitives.Tooltip
       data-slot="tooltip"
       offset={offset}
-      className={composeRenderProps(className, (className) =>
-        content({ className }),
+      className={composeRenderProps(className, className =>
+        content({ className })
       )}
       {...props}
     >
-      {composeRenderProps(props.children, (children) => (
+      {composeRenderProps(props.children, children => (
         <>
           {children}
           {!hideArrow && <TooltipArrow />}
         </>
       ))}
     </TooltipPrimitives.Tooltip>
-  );
+  )
 }
 
 /* -------------------------------------------------------------------------- */
 
-interface TooltipArrowProps extends React.ComponentProps<"svg"> {}
+interface TooltipArrowProps extends React.ComponentProps<'svg'> {}
 
 function TooltipArrow({ className }: TooltipArrowProps) {
   return (
@@ -74,17 +96,17 @@ function TooltipArrow({ className }: TooltipArrowProps) {
       <svg
         aria-hidden="true"
         data-slot="tooltip-arrow"
-        width={8}
-        height={8}
-        viewBox="0 0 8 8"
+        width={10}
+        height={10}
+        viewBox="0 0 10 10"
       >
-        <path d="M0 0 L4 4 L8 0" />
+        <path d="M0 0 L5 5 L10 0" />
       </svg>
     </PopoverPrimitives.OverlayArrow>
-  );
+  )
 }
 
 /* -------------------------------------------------------------------------- */
 
-export type { TooltipContentProps, TooltipProps };
-export { Tooltip, TooltipContent };
+export type { TooltipContentProps, TooltipProps }
+export { Tooltip, TooltipContent }

@@ -1,29 +1,29 @@
-"use client";
+'use client'
 
-import type React from "react";
-import * as SeparatorPrimitives from "react-aria-components/Separator";
-import { useSlottedContext } from "react-aria-components/slots";
-import { tv } from "tailwind-variants";
+import type React from 'react'
+import * as SeparatorPrimitives from 'react-aria-components/Separator'
+import { useSlottedContext } from 'react-aria-components/slots'
+import { tv } from 'tailwind-variants'
 
 const separatorVariants = tv({
-  base: "separator shrink-0 border-0 bg-border",
+  base: 'separator shrink-0 border-0 bg-border',
   variants: {
     orientation: {
-      horizontal: "h-px w-full",
-      vertical: "h-full w-px",
+      horizontal: 'h-px w-full',
+      vertical: 'h-full w-px',
     },
   },
   defaultVariants: {
-    orientation: "horizontal",
+    orientation: 'horizontal',
   },
-});
+})
 
 interface SeparatorProps extends React.ComponentProps<
   typeof SeparatorPrimitives.Separator
 > {}
 
 const Separator = ({ orientation, className, ...props }: SeparatorProps) => {
-  const ctx = useSlottedContext(SeparatorPrimitives.SeparatorContext);
+  const ctx = useSlottedContext(SeparatorPrimitives.SeparatorContext)
 
   return (
     <SeparatorPrimitives.Separator
@@ -35,8 +35,8 @@ const Separator = ({ orientation, className, ...props }: SeparatorProps) => {
       })}
       {...props}
     />
-  );
-};
+  )
+}
 
-export type { SeparatorProps };
-export { Separator };
+export type { SeparatorProps }
+export { Separator }

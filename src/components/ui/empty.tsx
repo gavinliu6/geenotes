@@ -1,0 +1,142 @@
+import type * as React from 'react'
+import type { VariantProps } from 'tailwind-variants'
+import { tv } from 'tailwind-variants'
+
+const emptyVariants = tv({
+  slots: {
+    base: `
+      flex w-full min-w-0 flex-1 flex-col items-center justify-center gap-4
+      rounded-xl border-dashed p-6 text-center text-balance
+    `,
+    header: 'flex max-w-sm flex-col items-center gap-2',
+    title: 'font-heading text-base font-medium tracking-tight',
+    description:
+      `
+        text-sm/relaxed text-fg-muted
+        [&>a]:underline [&>a]:underline-offset-4
+        [&>a:hover]:text-primary
+      `,
+    content:
+      `
+        flex w-full max-w-sm min-w-0 flex-col items-center gap-2.5 text-sm
+        text-balance
+      `,
+    media:
+      `
+        mb-2 flex shrink-0 items-center justify-center
+        **:[svg]:pointer-events-none **:[svg]:shrink-0
+      `,
+  },
+  variants: {
+    variant: {
+      default: {
+        media: 'bg-transparent',
+      },
+      icon: {
+        media:
+          `
+            size-9 rounded-md bg-muted text-fg
+            **:[svg]:not-with-[size]:size-5
+          `,
+      },
+    },
+  },
+  defaultVariants: {
+    variant: 'default',
+  },
+})
+
+const { base, header, title, description, content, media } = emptyVariants()
+
+/* -------------------------------------------------------------------------- */
+
+interface EmptyProps extends React.ComponentProps<'div'> {}
+
+const Empty = ({ className, ...props }: EmptyProps) => {
+  return <div data-slot="empty" className={base({ className })} {...props} />
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface EmptyHeaderProps extends React.ComponentProps<'div'> {}
+
+const EmptyHeader = ({ className, ...props }: EmptyHeaderProps) => {
+  return (
+    <div
+      data-slot="empty-header"
+      className={header({ className })}
+      {...props}
+    />
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface EmptyTitleProps extends React.ComponentProps<'div'> {}
+
+const EmptyTitle = ({ className, ...props }: EmptyTitleProps) => {
+  return (
+    <div data-slot="empty-title" className={title({ className })} {...props} />
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface EmptyDescriptionProps extends React.ComponentProps<'div'> {}
+
+const EmptyDescription = ({ className, ...props }: EmptyDescriptionProps) => {
+  return (
+    <div
+      data-slot="empty-description"
+      className={description({ className })}
+      {...props}
+    />
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface EmptyContentProps extends React.ComponentProps<'div'> {}
+
+const EmptyContent = ({ className, ...props }: EmptyContentProps) => {
+  return (
+    <div
+      data-slot="empty-content"
+      className={content({ className })}
+      {...props}
+    />
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface EmptyMediaProps
+  extends React.ComponentProps<'div'>, VariantProps<typeof emptyVariants> {}
+const EmptyMedia = ({ variant, className, ...props }: EmptyMediaProps) => {
+  return (
+    <div
+      data-slot="empty-media"
+      className={media({ variant, className })}
+      {...props}
+    />
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+export type {
+  EmptyContentProps,
+  EmptyDescriptionProps,
+  EmptyHeaderProps,
+  EmptyMediaProps,
+  EmptyProps,
+  EmptyTitleProps
+}
+export {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle
+}
