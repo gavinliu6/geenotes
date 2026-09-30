@@ -10,3 +10,7 @@ export function getAvatarFallback(name: string) {
 
   return first.segment.toLocaleUpperCase()
 }
+
+export function getFirstName(name: string) {
+  return name.trim().split(/\s+/u)[0]
+}

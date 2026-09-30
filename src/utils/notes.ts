@@ -13,6 +13,8 @@ export function getDisplayTitle(title?: string) {
   return title?.trim() || 'Untitled'
 }
 
+const MINUTE_MS = 60_000
+const HOUR_MS = 3_600_000
 const DAY_MS = 86_400_000
 const formatters = new Map<string, ReturnType<typeof createFormatters>>()
 
@@ -26,6 +28,23 @@ export function formatNoteTime(date: Date, timeZone: string, now: Date) {
   return (day.year === today.year ? format.monthDay : format.fullDate).format(
     date
   )
+}
+
+/** "Just now", "5m ago" and "3h ago" within the same day, calendar dates after that. */
+export function formatRelativeTime(date: Date, timeZone: string, now: Date) {
+  const elapsed = now.getTime() - date.getTime()
+
+  if (elapsed < MINUTE_MS) return 'Just now'
+  if (elapsed < HOUR_MS) return `${Math.floor(elapsed / MINUTE_MS)}m ago`
+
+  const { days, day, today, format } = compareDays(date, timeZone, now)
+
+  if (days <= 0) return `${Math.floor(elapsed / HOUR_MS)}h ago`
+  if (days === 1) return 'Yesterday'
+
+  return (
+    day.year === today.year ? format.shortMonthDay : format.shortFullDate
+  ).format(date)
 }
 
 /** Buckets notes the way Apple Notes does. `notes` must already be sorted by `field`. */
@@ -100,6 +119,17 @@ function createFormatters(timeZone: string) {
     fullDate: new Intl.DateTimeFormat('en-US', {
       timeZone,
       month: 'numeric',
+      day: 'numeric',
+      year: 'numeric',
+    }),
+    shortMonthDay: new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      month: 'short',
+      day: 'numeric',
+    }),
+    shortFullDate: new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      month: 'short',
       day: 'numeric',
       year: 'numeric',
     }),

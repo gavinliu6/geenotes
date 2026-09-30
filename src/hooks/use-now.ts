@@ -24,3 +24,19 @@ export function useNow(loadedNow: number, timeZone: string) {
 
   return new Date(now)
 }
+
+/** Like `useNow`, but also re-renders every minute, for labels such as "5m ago". */
+export function useMinuteNow(loadedNow: number) {
+  const [ticked, setTicked] = useState(0)
+
+  useEffect(() => {
+    const tick = () => setTicked(Date.now())
+
+    tick()
+    const id = setInterval(tick, CHECK_INTERVAL_MS)
+
+    return () => clearInterval(id)
+  }, [])
+
+  return new Date(Math.max(loadedNow, ticked))
+}
