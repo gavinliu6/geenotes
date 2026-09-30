@@ -31,8 +31,18 @@ export const saveNoteSchema = noteIdSchema
     'Nothing to save'
   )
 
+export const USER_NAME_MAX_LENGTH = 50
 export const PASSWORD_MIN_LENGTH = 8
 export const PASSWORD_MAX_LENGTH = 128
+
+export const userNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Name is required')
+  .max(
+    USER_NAME_MAX_LENGTH,
+    `Name must be ${USER_NAME_MAX_LENGTH} characters or fewer`
+  )
 
 export const PASSWORD_COMPROMISED_ERROR
   = 'This password has shown up in data breaches. Choose a different one.'
@@ -68,6 +78,10 @@ export const newPasswordSchema = z
     PASSWORD_MAX_LENGTH,
     `Password must be ${PASSWORD_MAX_LENGTH} characters or fewer`
   )
+
+export const setPasswordSchema = z.object({
+  newPassword: newPasswordSchema,
+})
 
 export const IMAGE_UPLOAD_MAX_BYTES = 10 * 1024 * 1024
 

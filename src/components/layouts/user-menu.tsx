@@ -19,6 +19,7 @@ import { toastManager } from '@/components/ui/toast'
 import { Tooltip, TooltipContent } from '@/components/ui/tooltip'
 import { authClient } from '@/lib/auth-client'
 import type { AuthUser } from '@/lib/auth-types'
+import { getAvatarFallback } from '@/utils/account'
 
 interface UserMenuProps {
   user: AuthUser
@@ -127,17 +128,4 @@ export function UserMenu({ user }: UserMenuProps) {
       </Popover>
     </Menu>
   )
-}
-
-/** First user-perceived character, so emoji and CJK names aren't split mid-glyph. */
-function getAvatarFallback(name: string) {
-  const trimmed = name.trim()
-
-  if (!trimmed) return '?'
-
-  const [first] = new Intl.Segmenter(undefined, {
-    granularity: 'grapheme',
-  }).segment(trimmed)
-
-  return first.segment.toLocaleUpperCase()
 }
