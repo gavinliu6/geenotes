@@ -1,0 +1,257 @@
+@import '@milkdown/kit/prose/view/style/prosemirror.css' layer(base);
+@import '@milkdown/kit/prose/gapcursor/style/gapcursor.css' layer(base);
+
+@layer components {
+  .markdown-body {
+    /* ------------------------------ general ------------------------------- */
+    @apply text-[15px]/6 text-fg outline-none text-pretty;
+
+    & > :first-child {
+      @apply mt-0!;
+    }
+
+    & :is(p, blockquote, ul, ol, dl, table, pre, details) {
+      @apply mt-0 mb-4;
+    }
+
+    /* -------------------------------- bold -------------------------------- */
+    & strong {
+      @apply font-semibold;
+    }
+
+    /* --------------------------- strikethrough ---------------------------- */
+    & :is(del, s) {
+      @apply text-fg-muted;
+    }
+
+    /* ------------------------------ divider ------------------------------- */
+    & hr {
+      @apply my-6 border-border;
+    }
+
+    /* ------------------------------ headings ------------------------------ */
+    & h1 {
+      @apply mt-12 mb-4 text-[1.75rem]/9 tracking-tight font-normal;
+    }
+
+    & h2 {
+      @apply mt-10 mb-4 text-2xl tracking-tight font-normal;
+    }
+
+    & h3 {
+      @apply mt-8 mb-3 text-xl/7 tracking-tight font-normal;
+    }
+
+    & :is(h4, h5, h6) {
+      @apply mt-6 mb-2 text-base/6 font-semibold;
+    }
+
+    & :is(h1, h2, h3, h4, h5, h6) + * {
+      @apply mt-0;
+    }
+
+    /* ------------------------------- links -------------------------------- */
+    & a {
+      @apply text-fg-accent underline decoration-border-accent underline-offset-[3px];
+    }
+
+    & a[href^='http'] {
+      @apply inline-flex items-center gap-px;
+    }
+
+    & a[href^='http']::after {
+      @apply inline-block size-[0.875em] bg-current content-[''] mask-[url('data:image/svg+xml,%3Csvg%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M18.25%2015.25v-9.5h-9.5M6%2018%2017.6%206.4%22%20stroke%3D%22currentColor%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22square%22%2F%3E%3C%2Fsvg%3E')] mask-center mask-no-repeat mask-cover;
+    }
+
+    /* ------------------------------- lists -------------------------------- */
+    & :is(ul, ol) {
+      @apply pl-6;
+    }
+
+    & ul {
+      @apply list-disc;
+    }
+
+    & ol {
+      @apply list-decimal;
+    }
+
+    & :is(ul, ol) ul {
+      @apply list-[circle];
+    }
+
+    & :is(ul, ol) :is(ul, ol) ul {
+      @apply list-[square];
+    }
+
+    & :is(ul, ol) ol {
+      @apply list-[lower-alpha];
+    }
+
+    & :is(ul, ol) :is(ul, ol) ol {
+      @apply list-[lower-roman];
+    }
+
+    & ol > li::marker {
+      font-variant-numeric: tabular-nums;
+    }
+
+    & li {
+      @apply pl-1;
+
+      &::marker {
+        @apply text-fg-muted;
+      }
+
+      & + li {
+        @apply mt-2;
+      }
+
+      & > p {
+        @apply mb-2;
+      }
+
+      & > :is(ul, ol) {
+        @apply my-2;
+      }
+
+      & > :last-child {
+        @apply mb-0;
+      }
+    }
+
+    & :is(ul, ol)[data-spread='false'] > li + li {
+      @apply mt-1;
+    }
+
+    & li[data-item-type='task'] {
+      @apply relative -ml-6 list-none pl-7;
+
+      &::before {
+        @apply absolute top-[calc(0.5lh-0.5rem)] left-0.5 size-4 cursor-pointer
+          rounded-xs border border-border-control bg-bg;
+        content: '';
+      }
+
+      &[data-checked='true'] {
+        &::before {
+          @apply border-primary bg-primary;
+        }
+
+        &::after {
+          @apply pointer-events-none absolute top-[calc(0.5lh-0.5rem)] left-0.5
+            size-4 bg-fg-on-primary;
+          content: '';
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")
+            center / 0.75rem no-repeat;
+        }
+
+        & > p {
+          @apply text-fg-muted line-through;
+        }
+      }
+    }
+
+    /* ------------------------ blockquotes & codes ------------------------- */
+    & blockquote {
+      @apply px-4 py-2 border-l-4;
+
+      & > :last-child {
+        @apply mb-0;
+      }
+    }
+
+    & code {
+      @apply font-mono tracking-normal;
+    }
+
+    & code:not(:is(pre, h1, h2, h3, h4, h5, h6) *) {
+      @apply rounded-sm bg-muted px-1 py-[0.15em] text-[85%]
+        whitespace-break-spaces;
+    }
+
+    & pre {
+      @apply overflow-x-auto rounded-md bg-muted px-4 py-3 font-mono text-sm/6
+        whitespace-pre;
+    }
+
+    /* ------------------------------- alerts ------------------------------- */
+    & [data-alert-type='note'] {
+      --alert-color: var(--color-fg-info);
+    }
+
+    & [data-alert-type='tip'] {
+      --alert-color: var(--color-fg-success);
+    }
+
+    & [data-alert-type='important'] {
+      --alert-color: oklch(from var(--color-fg-info) l c 305);
+    }
+
+    & [data-alert-type='warning'] {
+      --alert-color: var(--color-fg-warning);
+    }
+
+    & [data-alert-type='caution'] {
+      --alert-color: var(--color-fg-danger);
+    }
+
+    & .markdown-alert {
+      @apply mb-4 border-l-4 border-(--alert-color) px-4 py-2;
+    }
+
+    & .markdown-alert-title {
+      @apply mb-2 flex font-medium text-(--alert-color);
+    }
+
+    & .markdown-alert-content > :last-child {
+      @apply mb-0;
+    }
+
+    /* ------------------------------- images ------------------------------- */
+    & img {
+      @apply rounded-md overflow-hidden outline-1 outline-[rgba(0,0,0,0.1)] -outline-offset-1 dark:outline-[rgba(255,255,255,0.1)];
+    }
+
+    & img[data-load-error] {
+      all: revert;
+    }
+
+    /* ------------------------------- table -------------------------------- */
+    & table {
+      @apply w-full border-collapse text-sm tabular-nums;
+    }
+
+    & :is(th, td) {
+      @apply border border-border px-3 py-1.5 text-left align-top;
+
+      & > :last-child {
+        @apply mb-0;
+      }
+    }
+
+    & th {
+      @apply bg-muted font-semibold;
+    }
+
+    & .selectedCell {
+      @apply bg-text-selection;
+    }
+
+    & [data-type='html'] {
+      @apply font-mono text-sm text-fg-muted;
+    }
+
+    & .ProseMirror-selectednode {
+      @apply outline-2 outline-border-focus;
+    }
+
+    & .ProseMirror-gapcursor::after {
+      @apply border-fg;
+    }
+
+    & > :last-child {
+      @apply mb-0!;
+    }
+  }
+}

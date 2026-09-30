@@ -2,8 +2,11 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist/wght-italic.css';
 @import '@fontsource-variable/noto-serif';
 @import '@fontsource-variable/geist-mono';
+@import './components/editor/typography.css';
+@import './components/editor/crepe.css';
 
 @plugin "tailwindcss-react-aria-components";
 @plugin "tailwindcss-with";
@@ -23,7 +26,9 @@
   --container-8xl: 90rem;
   --container-9xl: 100rem;
   --font-heading: var(--font-sans);
-  --font-sans: 'Geist Variable', sans-serif;
+  --font-sans:
+    'Geist Variable', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC',
+    sans-serif;
   --font-serif: 'Noto Serif Variable', serif;
   --font-mono: 'Geist Mono Variable', monospace;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -164,6 +169,11 @@
   --color-fg-muted: var(--fg-muted);
   --color-fg-inverse: var(--fg-inverse);
   --color-fg-disabled: var(--fg-disabled);
+  --color-fg-placeholder: color-mix(
+    in oklab,
+    var(--fg-muted),
+    var(--fg-disabled) 50%
+  );
   --color-fg-on-neutral: var(--fg-on-neutral);
   --color-border-control: var(--border-control);
   --color-border-control-hover: var(--border-control-hover);
@@ -487,6 +497,7 @@
   h6 {
     font-weight: var(--font-weight-heading, var(--font-weight-semibold));
     letter-spacing: var(--tracking-heading, 0);
+    text-wrap: balance;
   }
   :is([data-disabled], :disabled):not(:is([data-disabled], :disabled) *) {
     opacity: var(--disabled-opacity, 1);
@@ -533,6 +544,24 @@
 @utility select-ui {
   -webkit-user-select: var(--user-select-ui, none);
   user-select: var(--user-select-ui, none);
+}
+
+@utility copy-feedback {
+  @apply grid;
+
+  & > svg {
+    @apply col-start-1 row-start-1 transition-[opacity,scale,filter]
+      duration-enter ease-enter;
+  }
+
+  & > .lucide-check {
+    @apply text-fg-success;
+  }
+
+  &:not([data-copied], [data-copied] *) > .lucide-check,
+  &:is([data-copied], [data-copied] *) > .lucide-copy {
+    @apply opacity-0 blur-[2px] motion-safe:scale-50;
+  }
 }
 ::selection {
   @apply bg-text-selection text-fg-on-text-selection;
