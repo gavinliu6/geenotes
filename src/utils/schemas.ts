@@ -15,9 +15,27 @@ export const noteIdSchema = z.object({
   noteId: z.string().min(1),
 })
 
+export const searchNotesSchema = z.object({
+  query: z.string().trim().min(1).max(100),
+})
+
+export const NOTE_TITLE_MAX_LENGTH = 500
+
+export const saveNoteSchema = noteIdSchema
+  .extend({
+    title: z.string().max(NOTE_TITLE_MAX_LENGTH).optional(),
+    markdown: z.string().max(500_000).optional(),
+  })
+  .refine(
+    data => data.title !== undefined || data.markdown !== undefined,
+    'Nothing to save'
+  )
+
 export type NoteSortBy = z.infer<typeof noteSortBySchema>
 export type SortDirection = z.infer<typeof sortDirectionSchema>
 export type ListNotesParams = z.output<typeof listNotesSchema>
+export type SaveNoteInput = z.input<typeof saveNoteSchema>
+export type NoteChanges = Omit<SaveNoteInput, 'noteId'>
 
 export type Note = typeof note.$inferSelect
 export type NoteListItem = Pick<Note, 'id' | 'title' | 'createdAt' | 'updatedAt'>

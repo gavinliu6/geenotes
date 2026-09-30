@@ -6,6 +6,7 @@ import { note, noteView } from '@/db/schema'
 
 import type {
   ListNotesParams,
+  NoteChanges,
   NoteListItem,
   NoteSortBy,
   SortDirection
@@ -13,6 +14,7 @@ import type {
 
 const PAGE_SIZE = 50
 const RECENT_NOTES_LIMIT = 20
+const SEARCH_LIMIT = 20
 const VIEW_THROTTLE_MS = 30_000
 
 const sortColumns = {
@@ -78,6 +80,58 @@ export async function insertNote(userId: string) {
   return row
 }
 
+export async function updateNote(
+  userId: string,
+  noteId: string,
+  changes: NoteChanges
+) {
+  const rows = await db
+    .update(note)
+    .set(changes)
+    .where(
+      and(
+        eq(note.id, noteId),
+        eq(note.userId, userId),
+        isNull(note.deletedAt)
+      )
+    )
+    .returning({ id: note.id, updatedAt: note.updatedAt })
+
+  return rows.at(0)
+}
+
+export async function hardDeleteNote(userId: string, noteId: string) {
+  const rows = await db
+    .delete(note)
+    .where(
+      and(
+        eq(note.id, noteId),
+        eq(note.userId, userId),
+        isNull(note.deletedAt)
+      )
+    )
+    .returning({ id: note.id })
+
+  return rows.at(0)
+}
+
+export function selectMatchingNotes(userId: string, query: string) {
+  const pattern = `%${escapeLike(query)}%`
+  const titleMatches = sql`${note.title} like ${pattern} escape '\\'`
+  const markdownMatches = sql`${note.markdown} like ${pattern} escape '\\'`
+
+  return db.query.note.findMany({
+    columns: { id: true, title: true, createdAt: true, updatedAt: true },
+    where: and(
+      eq(note.userId, userId),
+      isNull(note.deletedAt),
+      or(titleMatches, markdownMatches)
+    ),
+    orderBy: [desc(titleMatches), desc(note.updatedAt), desc(note.id)],
+    limit: SEARCH_LIMIT,
+  })
+}
+
 export function selectRecentNotes(userId: string) {
   return db
     .select({
@@ -120,6 +174,10 @@ export async function upsertNoteView(userId: string, noteId: string) {
       set: { viewedAt: now },
       setWhere: lt(noteView.viewedAt, new Date(now.getTime() - VIEW_THROTTLE_MS)),
     })
+}
+
+function escapeLike(value: string) {
+  return value.replace(/[\\%_]/g, char => `\\${char}`)
 }
 
 function afterCursor(

@@ -7,7 +7,8 @@ import {
 import {
   getNote,
   listNotes,
-  listRecentNotes
+  listRecentNotes,
+  searchNotes
 } from '@/utils/notes.functions'
 
 import { noteKeys } from './keys'
@@ -47,4 +48,11 @@ export function recentNoteListQueryOptions() {
 
 export function useNoteList(query?: NoteListQuery) {
   return useSuspenseInfiniteQuery(noteListQueryOptions(query))
+}
+
+export function noteSearchQueryOptions(query: string) {
+  return queryOptions({
+    queryKey: noteKeys.search(query),
+    queryFn: () => searchNotes({ data: { query } }),
+  })
 }
