@@ -1,8 +1,11 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { FileQuestionIcon } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
+import type { NoteEditorHandle } from '@/components/editor/note-editor'
+import { NoteEditor } from '@/components/editor/note-editor'
+import { NoteToolbar } from '@/components/note-toolbar'
 import {
   Empty,
   EmptyDescription,
@@ -10,13 +13,23 @@ import {
   EmptyMedia,
   EmptyTitle
 } from '@/components/ui/empty'
-import { useRecordNoteView } from '@/data/notes/notes.mutation'
+import { useDeleteNote, useRecordNoteView } from '@/data/notes/notes.mutation'
 import { noteQueryOptions } from '@/data/notes/notes.query'
+import {
+  getNoteFullWidth,
+  persistNoteFullWidth
+} from '@/lib/note-width.functions'
+import { cn } from '@/lib/utils'
 import { getDisplayTitle } from '@/utils/notes'
 
 export const Route = createFileRoute('/_authed/_app/notes/$noteId')({
-  loader: ({ context: { queryClient }, params }) =>
-    queryClient.ensureQueryData(noteQueryOptions(params.noteId)),
+  loader: async ({ context: { queryClient }, params }) => {
+    const note = await queryClient.ensureQueryData(
+      noteQueryOptions(params.noteId)
+    )
+
+    return { title: note.title, isFullWidth: getNoteFullWidth() }
+  },
   head: ({ loaderData }) => ({
     meta: [
       {
@@ -31,25 +44,43 @@ export const Route = createFileRoute('/_authed/_app/notes/$noteId')({
 function NotePage() {
   const { noteId } = Route.useParams()
   const { data: note } = useSuspenseQuery(noteQueryOptions(noteId))
+  const { isFullWidth: initialIsFullWidth } = Route.useLoaderData()
+  const [isFullWidth, setIsFullWidth] = useState(initialIsFullWidth)
+  const editorRef = useRef<NoteEditorHandle>(null)
   const { mutate: recordView } = useRecordNoteView()
+  const { mutate: deleteNote } = useDeleteNote()
 
   useEffect(() => {
     recordView(noteId)
   }, [noteId, recordView])
 
+  const changeFullWidth = (next: boolean) => {
+    setIsFullWidth(next)
+    persistNoteFullWidth(next)
+  }
+
+  const handleDelete = async () => {
+    await editorRef.current?.flush()
+    deleteNote(noteId)
+  }
+
   return (
-    <article className="mx-auto w-full max-w-3xl px-6 py-10">
-      <h1 className="font-serif text-3xl">{getDisplayTitle(note.title)}</h1>
-      {note.markdown.trim()
-        ? (
-            <pre className="mt-8 font-sans text-sm/relaxed whitespace-pre-wrap">
-              {note.markdown}
-            </pre>
-          )
-        : (
-            <p className="mt-8 text-sm text-fg-muted">This note is empty.</p>
-          )}
-    </article>
+    <>
+      <NoteToolbar
+        note={note}
+        isFullWidth={isFullWidth}
+        onFullWidthChange={changeFullWidth}
+        onDelete={() => void handleDelete()}
+      />
+      <article
+        className={cn(
+          `mx-auto flex w-full grow flex-col px-6 pt-4`,
+          !isFullWidth && 'max-w-2xl'
+        )}
+      >
+        <NoteEditor key={note.id} ref={editorRef} note={note} />
+      </article>
+    </>
   )
 }
 

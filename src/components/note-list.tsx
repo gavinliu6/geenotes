@@ -20,6 +20,7 @@ import { Tooltip, TooltipContent } from '@/components/ui/tooltip'
 import { noteListQueryOptions } from '@/data/notes/notes.query'
 import type { NoteListQuery } from '@/data/notes/types'
 import { useNow } from '@/hooks/use-now'
+import { createContext } from '@/lib/context'
 import { persistNoteListSort } from '@/lib/note-list.functions'
 import { cn } from '@/lib/utils'
 import {
@@ -38,15 +39,39 @@ const sortOptions: { id: NoteSortBy, label: string }[] = [
   { id: 'title', label: 'Title' },
 ]
 
-interface NoteListProps {
-  className?: string
+interface NoteListSortContextValue {
+  sort: NoteListQuery
+  changeSort: (sort: NoteListQuery) => void
 }
 
-export function NoteList({ className }: NoteListProps) {
-  const headingId = useId()
-  const { timeZone, now: loadedNow } = appRoute.useLoaderData()
+const [NoteListSortContext, useNoteListSort]
+  = createContext<NoteListSortContextValue>({ name: 'NoteListSortProvider' })
+
+export function NoteListSortProvider({ children }: { children: React.ReactNode }) {
   const { sort: initialSort } = notesRoute.useLoaderData()
   const [sort, setSort] = useState(initialSort)
+
+  const changeSort = (next: NoteListQuery) => {
+    setSort(next)
+    persistNoteListSort(next)
+  }
+
+  return (
+    <NoteListSortContext value={{ sort, changeSort }}>
+      {children}
+    </NoteListSortContext>
+  )
+}
+
+interface NoteListProps {
+  className?: string
+  onNavigate?: () => void
+}
+
+export function NoteList({ className, onNavigate }: NoteListProps) {
+  const headingId = useId()
+  const { timeZone, now: loadedNow } = appRoute.useLoaderData()
+  const { sort, changeSort } = useNoteListSort('NoteList')
   const now = useNow(loadedNow, timeZone)
   const {
     data,
@@ -73,11 +98,6 @@ export function NoteList({ className }: NoteListProps) {
     hasNextPage && !isFetchingNextPage
   )
   const DirectionIcon = sort.direction === 'asc' ? ArrowUpIcon : ArrowDownIcon
-
-  const changeSort = (next: NoteListQuery) => {
-    setSort(next)
-    persistNoteListSort(next)
-  }
 
   return (
     <nav aria-labelledby={headingId} className={cn('flex flex-col', className)}>
@@ -130,11 +150,7 @@ export function NoteList({ className }: NoteListProps) {
           </Popover>
         </Menu>
       </header>
-      <div className="
-        min-h-0 flex-1
-        md:overflow-y-auto md:overscroll-y-contain
-      "
-      >
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
         {groups
           ? (
               <ul className="flex flex-col p-2 pt-0">
@@ -154,6 +170,7 @@ export function NoteList({ className }: NoteListProps) {
                           note={note}
                           date={note[dateField]}
                           label={group.format.format(note[dateField])}
+                          onNavigate={onNavigate}
                         />
                       ))}
                     </ul>
@@ -169,6 +186,7 @@ export function NoteList({ className }: NoteListProps) {
                     note={note}
                     date={note.updatedAt}
                     label={formatNoteTime(note.updatedAt, timeZone, now)}
+                    onNavigate={onNavigate}
                   />
                 ))}
               </ul>
@@ -187,14 +205,16 @@ interface NoteLinkProps {
   note: NoteListItem
   date: Date
   label: string
+  onNavigate?: () => void
 }
 
-function NoteLink({ note, date, label }: NoteLinkProps) {
+function NoteLink({ note, date, label, onNavigate }: NoteLinkProps) {
   return (
     <li>
       <Link
         variant="unstyled"
         href={`/notes/${note.id}`}
+        onPress={onNavigate}
         render={props => (
           <RouterLink
             {...(props as React.ComponentProps<'a'>)}

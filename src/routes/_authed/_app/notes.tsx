@@ -1,17 +1,9 @@
-import {
-  createFileRoute,
-  Link as RouterLink,
-  Outlet,
-  useParams
-} from '@tanstack/react-router'
-import { ArrowLeftIcon } from 'lucide-react'
-import type * as React from 'react'
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 
-import { NoteList } from '@/components/note-list'
-import { LinkButton } from '@/components/ui/button'
+import { NoteList, NoteListSortProvider } from '@/components/note-list'
 import { noteListQueryOptions } from '@/data/notes/notes.query'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { getNoteListSort } from '@/lib/note-list.functions'
-import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/_authed/_app/notes')({
   loader: async ({ context: { queryClient } }) => {
@@ -25,47 +17,30 @@ export const Route = createFileRoute('/_authed/_app/notes')({
 })
 
 function NotesLayout() {
-  const { noteId } = useParams({ strict: false })
+  const isMobile = useIsMobile()
 
   return (
-    <div className="
-      flex flex-1
-      max-md:flex-col
-      md:min-h-0
-    "
-    >
-      <NoteList
-        className={cn(
-          'md:w-72 md:shrink-0 md:border-r',
-          noteId && 'max-md:hidden'
-        )}
-      />
+    <NoteListSortProvider>
       <div className="
-        flex min-w-0 flex-1 flex-col
-        md:overflow-y-auto
+        flex flex-1
+        md:min-h-0
       "
       >
-        {noteId && (
-          <div className="
-            px-2 py-1
-            md:hidden
+        {!isMobile && (
+          <NoteList className="
+            w-72 shrink-0 border-r
+            max-md:hidden
           "
-          >
-            <LinkButton
-              variant="quiet"
-              size="sm"
-              href="/notes"
-              render={props => (
-                <RouterLink {...(props as React.ComponentProps<'a'>)} to="/notes" />
-              )}
-            >
-              <ArrowLeftIcon data-icon="inline-start" />
-              All notes
-            </LinkButton>
-          </div>
+          />
         )}
-        <Outlet />
+        <div className="
+          @container flex min-w-0 flex-1 flex-col
+          md:overflow-y-auto
+        "
+        >
+          <Outlet />
+        </div>
       </div>
-    </div>
+    </NoteListSortProvider>
   )
 }

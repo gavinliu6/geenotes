@@ -35,7 +35,7 @@ function AppLayout() {
       <SidebarInset className="md:overflow-y-auto">
         {/* Below `md` the sidebar is a drawer, so the page needs its own opener. */}
         <header className="
-          flex h-12 items-center px-2
+          flex h-12 items-center px-6
           md:hidden
         "
         >

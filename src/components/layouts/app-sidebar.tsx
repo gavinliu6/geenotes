@@ -1,8 +1,10 @@
+import { useRouter } from '@tanstack/react-router'
 import {
   ArrowLeftFromLineIcon,
   ArrowRightFromLineIcon,
   StickyNotePlusIcon
 } from 'lucide-react'
+import { useEffect } from 'react'
 
 import { NewNoteButton } from '@/components/new-note-button'
 import {
@@ -25,6 +27,14 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ user }: AppSidebarProps) {
+  const router = useRouter()
+  const { setOpenMobile } = useSidebar()
+
+  useEffect(
+    () => router.subscribe('onBeforeNavigate', () => setOpenMobile(false)),
+    [router, setOpenMobile]
+  )
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>

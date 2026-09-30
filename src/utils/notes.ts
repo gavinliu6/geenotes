@@ -1,4 +1,4 @@
-import type { NoteListItem } from '@/utils/schemas'
+import type { Note, NoteListItem } from '@/utils/schemas'
 
 export type NoteDateField = 'createdAt' | 'updatedAt'
 
@@ -10,7 +10,7 @@ export interface NoteDateGroup<T> {
 }
 
 export function getDisplayTitle(title?: string) {
-  return title?.trim() || 'Untitled note'
+  return title?.trim() || 'Untitled'
 }
 
 const DAY_MS = 86_400_000
@@ -119,4 +119,10 @@ function toCalendarDay(date: Date | number, format: Intl.DateTimeFormat) {
   const year = get('year')
 
   return { year, index: Date.UTC(year, get('month') - 1, get('day')) / DAY_MS }
+}
+
+export function toNoteMarkdown({ title, markdown }: Pick<Note, 'title' | 'markdown'>) {
+  const heading = title.trim()
+
+  return heading ? `# ${heading}\n\n${markdown}` : markdown
 }

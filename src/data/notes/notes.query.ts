@@ -1,8 +1,4 @@
-import {
-  infiniteQueryOptions,
-  queryOptions,
-  useSuspenseInfiniteQuery
-} from '@tanstack/react-query'
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
 
 import {
   getNote,
@@ -44,10 +40,6 @@ export function recentNoteListQueryOptions() {
     queryKey: noteKeys.recent(),
     queryFn: () => listRecentNotes(),
   })
-}
-
-export function useNoteList(query?: NoteListQuery) {
-  return useSuspenseInfiniteQuery(noteListQueryOptions(query))
 }
 
 export function noteSearchQueryOptions(query: string) {
