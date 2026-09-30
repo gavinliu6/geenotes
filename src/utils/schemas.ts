@@ -19,6 +19,8 @@ export const searchNotesSchema = z.object({
   query: z.string().trim().min(1).max(100),
 })
 
+export const RECENT_NOTES_LIMIT = 6
+
 export const NOTE_TITLE_MAX_LENGTH = 500
 
 export const saveNoteSchema = noteIdSchema

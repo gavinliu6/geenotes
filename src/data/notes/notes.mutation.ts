@@ -10,6 +10,7 @@ import {
   saveNote
 } from '@/utils/notes.functions'
 import type { NoteChanges, NoteListItem } from '@/utils/schemas'
+import { RECENT_NOTES_LIMIT } from '@/utils/schemas'
 
 import { noteKeys } from './keys'
 import { noteQueryOptions, recentNoteListQueryOptions } from './notes.query'
@@ -46,7 +47,7 @@ export function useRecordNoteView() {
         queryClient.setQueryData(recentNoteListQueryOptions().queryKey, recent => [
           item,
           ...(recent ?? []).filter(entry => entry.id !== id),
-        ])
+        ].slice(0, RECENT_NOTES_LIMIT))
       }
 
       return queryClient.invalidateQueries({ queryKey: noteKeys.recent() })

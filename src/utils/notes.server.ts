@@ -11,9 +11,9 @@ import type {
   NoteSortBy,
   SortDirection
 } from './schemas'
+import { RECENT_NOTES_LIMIT } from './schemas'
 
 const PAGE_SIZE = 50
-const RECENT_NOTES_LIMIT = 20
 const SEARCH_LIMIT = 20
 const VIEW_THROTTLE_MS = 30_000
 
