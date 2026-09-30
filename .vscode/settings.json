@@ -7,5 +7,12 @@
   },
   "files.readonlyInclude": {
     "**/routeTree.gen.ts": true
+  },
+  "eslint.options": {
+    "overrideConfig": {
+      "rules": {
+        "better-tailwindcss/enforce-canonical-classes": "off"
+      }
+    }
   }
 }
