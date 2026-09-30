@@ -20,7 +20,7 @@ const otpFieldVariants = tv({
       **:data-input:w-9 **:data-input:flex-none **:data-input:px-0
       **:data-input:text-center **:data-input:font-mono
       **:data-input:tabular-nums
-      invalid:has-data-[slot=field-error]:**:data-[slot=description]:hidden
+      data-invalid:has-data-[slot=field-error]:**:data-[slot=description]:hidden
     `,
     group:
       `

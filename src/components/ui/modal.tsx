@@ -12,7 +12,7 @@ const modalVariants = tv({
       'group/modal absolute top-0 left-0 isolate z-100 h-(--page-height) w-full',
     backdrop:
       `
-        absolute inset-0 bg-overlay/40 backdrop-blur-sm transition-opacity
+        absolute inset-0 bg-overlay/20 backdrop-blur-lg transition-opacity
         duration-enter
         group-entering/modal:opacity-0
         group-exiting/modal:opacity-0 group-exiting/modal:duration-exit

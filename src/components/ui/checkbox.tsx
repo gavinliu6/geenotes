@@ -1,0 +1,167 @@
+'use client'
+
+import { CheckIcon, MinusIcon } from 'lucide-react'
+import type * as React from 'react'
+import { createContext, useContext, useId } from 'react'
+import { useSlotId } from 'react-aria/private/utils/useId'
+import * as CheckboxPrimitive from 'react-aria-components/Checkbox'
+import { composeRenderProps } from 'react-aria-components/composeRenderProps'
+import { LabelContext } from 'react-aria-components/Label'
+import { Provider, useSlottedContext } from 'react-aria-components/slots'
+import { tv } from 'tailwind-variants'
+
+import { Label } from '@/components/ui/field'
+
+const checkboxVariants = tv({
+  slots: {
+    root: `
+      flex items-center gap-2
+      has-data-description:items-start
+      has-data-description:**:data-checkbox-indicator:mt-0.5
+    `,
+    control:
+      `
+        relative flex items-center gap-2 rounded-full focus-reset
+        transition-colors
+        not-has-data-label:after:absolute not-has-data-label:after:-inset-x-3
+        not-has-data-label:after:-inset-y-2
+        read-only:cursor-default
+        focus-visible:focus-ring
+        disabled:cursor-disabled
+        has-data-description:items-start
+        has-data-label:w-full has-data-label:rounded-lg has-data-label:border
+        has-data-label:p-2.5
+        has-data-label:selected:border-selection/25
+        has-data-label:selected:bg-selection-muted
+      `,
+    indicator:
+      `
+        grid size-4 shrink-0 place-content-center rounded-full border
+        border-border-control bg-transparent text-transparent
+        transition-[background-color,border-color,box-shadow,color]
+        indeterminate:border-transparent indeterminate:bg-selection
+        indeterminate:text-fg-on-selection
+        invalid:border-border-danger
+        disabled:border-(--disabled-border,var(--color-border-control))
+        disabled:indeterminate:bg-(--disabled-selected-bg,var(--color-selection))
+        selected:border-transparent selected:bg-selection
+        selected:text-fg-on-selection
+        invalid:selected:bg-danger-muted invalid:selected:text-fg-danger
+        disabled:selected:bg-(--disabled-selected-bg,var(--color-selection))
+        disabled:selected:text-(--disabled-selected-fg,var(--color-fg-on-selection))
+        *:[svg]:size-3
+      `,
+  },
+})
+
+const { root, control, indicator } = checkboxVariants()
+
+const InternalCheckboxContext
+  = createContext<CheckboxPrimitive.CheckboxButtonRenderProps | null>(null)
+
+/* -------------------------------------------------------------------------- */
+
+interface CheckboxProps extends React.ComponentProps<
+  typeof CheckboxPrimitive.CheckboxField
+> {}
+
+const Checkbox = ({ id: idProp, className, ...props }: CheckboxProps) => {
+  const autoId = useId()
+  const id = idProp ?? autoId
+  const labelId = useSlotId()
+
+  return (
+    <CheckboxPrimitive.CheckboxField
+      data-checkbox=""
+      id={id}
+      aria-labelledby={labelId}
+      className={composeRenderProps(className, className =>
+        root({ className })
+      )}
+      {...props}
+    >
+      {composeRenderProps(props.children, (children) => {
+        return children
+          ? (
+              <Provider values={[[LabelContext, { htmlFor: id, id: labelId }]]}>
+                {typeof children === 'string'
+                  ? (
+                      <>
+                        <CheckboxControl />
+                        <Label>{children}</Label>
+                      </>
+                    )
+                  : (
+                      children
+                    )}
+              </Provider>
+            )
+          : (
+              <CheckboxControl />
+            )
+      })}
+    </CheckboxPrimitive.CheckboxField>
+  )
+}
+
+interface CheckboxControlProps extends React.ComponentProps<
+  typeof CheckboxPrimitive.CheckboxButton
+> {}
+
+const CheckboxControl = ({ className, ...props }: CheckboxControlProps) => {
+  const labelContext = useSlottedContext(LabelContext)
+  const { id: labelId } = labelContext ?? {}
+  return (
+    <CheckboxPrimitive.CheckboxButton
+      data-checkbox-control=""
+      className={composeRenderProps(className, className =>
+        control({ className })
+      )}
+      {...props}
+    >
+      {composeRenderProps(props.children, (children, renderProps) => {
+        return (
+          <Provider
+            values={[
+              [InternalCheckboxContext, renderProps],
+              [LabelContext, { id: labelId, elementType: 'span' }],
+            ]}
+          >
+            {children ?? <CheckboxIndicator />}
+          </Provider>
+        )
+      })}
+    </CheckboxPrimitive.CheckboxButton>
+  )
+}
+
+interface CheckboxIndicatorProps extends React.ComponentProps<'span'> {}
+
+const CheckboxIndicator = ({ className, ...props }: CheckboxIndicatorProps) => {
+  const ctx = useContext(InternalCheckboxContext)
+  return (
+    <span
+      data-checkbox-indicator=""
+      data-rac=""
+      data-selected={ctx?.isSelected || undefined}
+      data-indeterminate={ctx?.isIndeterminate || undefined}
+      data-pressed={ctx?.isPressed || undefined}
+      data-hovered={ctx?.isHovered || undefined}
+      data-focused={ctx?.isFocused || undefined}
+      data-focus-visible={ctx?.isFocusVisible || undefined}
+      data-disabled={ctx?.isDisabled || undefined}
+      data-readonly={ctx?.isReadOnly || undefined}
+      data-invalid={ctx?.isInvalid || undefined}
+      data-required={ctx?.isRequired || undefined}
+      className={indicator({ className })}
+      {...props}
+    >
+      {props.children ?? (ctx?.isIndeterminate ? <MinusIcon /> : <CheckIcon />)}
+    </span>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+export type { CheckboxControlProps, CheckboxIndicatorProps, CheckboxProps }
+export { Checkbox, CheckboxControl, CheckboxIndicator }
