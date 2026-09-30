@@ -31,6 +31,44 @@ export const saveNoteSchema = noteIdSchema
     'Nothing to save'
   )
 
+export const PASSWORD_MIN_LENGTH = 8
+export const PASSWORD_MAX_LENGTH = 128
+
+export const PASSWORD_COMPROMISED_ERROR
+  = 'This password has shown up in data breaches. Choose a different one.'
+
+/** Apple Account rules: https://support.apple.com/en-us/102614 */
+export const passwordRequirements = [
+  {
+    label: `${PASSWORD_MIN_LENGTH} or more characters`,
+    test: (password: string) => password.length >= PASSWORD_MIN_LENGTH,
+  },
+  {
+    label: 'Upper and lowercase letters',
+    test: (password: string) =>
+      /\p{Lu}/u.test(password) && /\p{Ll}/u.test(password),
+  },
+  {
+    label: 'At least one number',
+    test: (password: string) => /\p{Nd}/u.test(password),
+  },
+]
+
+export const newPasswordSchema = z
+  .string()
+  .refine(
+    password => passwordRequirements.every(({ test }) => test(password)),
+    'Password doesn\'t meet the requirements'
+  )
+  .refine(
+    password => !/(.)\1\1/u.test(password),
+    'Don\'t use the same character three times in a row'
+  )
+  .max(
+    PASSWORD_MAX_LENGTH,
+    `Password must be ${PASSWORD_MAX_LENGTH} characters or fewer`
+  )
+
 export const IMAGE_UPLOAD_MAX_BYTES = 10 * 1024 * 1024
 
 export const imageFileSchema = z

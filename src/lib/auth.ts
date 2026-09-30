@@ -1,9 +1,17 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter'
 import { betterAuth } from 'better-auth'
+import { APIError, createAuthMiddleware } from 'better-auth/api'
+import { haveIBeenPwned } from 'better-auth/plugins/haveibeenpwned'
 import { twoFactor } from 'better-auth/plugins/two-factor'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 
 import { db } from '@/db'
+import {
+  newPasswordSchema,
+  PASSWORD_COMPROMISED_ERROR,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH
+} from '@/utils/schemas'
 
 export const auth = betterAuth({
   appName: 'Geenotes',
@@ -12,6 +20,8 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    minPasswordLength: PASSWORD_MIN_LENGTH,
+    maxPasswordLength: PASSWORD_MAX_LENGTH,
   },
   user: {
     additionalFields: {
@@ -25,6 +35,19 @@ export const auth = betterAuth({
   },
   rateLimit: {
     enabled: true,
+  },
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== '/change-password') return
+
+      const result = newPasswordSchema.safeParse(ctx.body?.newPassword)
+
+      if (!result.success) {
+        throw new APIError('BAD_REQUEST', {
+          message: result.error.issues[0]?.message,
+        })
+      }
+    }),
   },
   advanced: {
     ipAddress: {
@@ -52,6 +75,10 @@ export const auth = betterAuth({
         // hand over usable recovery codes.
         storeBackupCodes: 'encrypted',
       },
+    }),
+    haveIBeenPwned({
+      paths: ['/change-password'],
+      customPasswordCompromisedMessage: PASSWORD_COMPROMISED_ERROR,
     }),
     // Has to stay last: it writes the Set-Cookie headers produced by every
     // plugin above it into the TanStack Start response.
