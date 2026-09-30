@@ -40,12 +40,14 @@ interface CommandProps<T extends object>
   Omit<AutocompletePrimitive.AutocompleteProps<T>, 'children' | 'filter'>,
   Omit<React.ComponentProps<'div'>, 'slot'> {
   filter?: Intl.CollatorOptions
+  shouldFilter?: boolean
 }
 
 function Command<T extends object>({
   className,
   slot,
   filter,
+  shouldFilter = true,
   ...props
 }: CommandProps<T>) {
   const { contains } = AutocompletePrimitive.useFilter({
@@ -55,7 +57,9 @@ function Command<T extends object>({
   })
 
   return (
-    <AutocompletePrimitive.Autocomplete filter={contains}>
+    <AutocompletePrimitive.Autocomplete
+      filter={shouldFilter ? contains : undefined}
+    >
       <div
         data-command=""
         className={commandVariants({ className })}
