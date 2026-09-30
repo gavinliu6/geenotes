@@ -31,6 +31,13 @@ export const saveNoteSchema = noteIdSchema
     'Nothing to save'
   )
 
+export const IMAGE_UPLOAD_MAX_BYTES = 10 * 1024 * 1024
+
+export const imageFileSchema = z
+  .file()
+  .max(IMAGE_UPLOAD_MAX_BYTES)
+  .mime(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/avif'])
+
 export type NoteSortBy = z.infer<typeof noteSortBySchema>
 export type SortDirection = z.infer<typeof sortDirectionSchema>
 export type ListNotesParams = z.output<typeof listNotesSchema>
