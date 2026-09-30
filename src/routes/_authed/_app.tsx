@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
 import { AppSidebar } from '@/components/layouts/app-sidebar'
@@ -20,10 +20,17 @@ export const Route = createFileRoute('/_authed/_app')({
 })
 
 function AppLayout() {
+  const router = useRouter()
   const { user } = Route.useRouteContext()
-  const { sidebarOpen } = Route.useLoaderData()
+  const { sidebarOpen, timeZone } = Route.useLoaderData()
 
-  useEffect(persistTimeZone, [])
+  useEffect(() => {
+    persistTimeZone()
+
+    if (timeZone !== getTimeZone()) {
+      void router.invalidate({ filter: match => match.routeId === Route.id })
+    }
+  }, [router, timeZone])
 
   return (
     <SidebarProvider
