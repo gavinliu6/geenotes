@@ -4,6 +4,14 @@ export const SAVE_DELAY_MS = 2000
 export const MAX_SAVE_DELAY_MS = 10_000
 export const RETRY_DELAY_MS = 5000
 
+export type SaveStatus = 'idle' | 'pending' | 'saving' | 'error'
+
+export interface SaveState {
+  status: SaveStatus
+  /** Set whenever a save, or a manual flush, confirms that nothing is left to save. */
+  savedAt?: number
+}
+
 interface SavedNote {
   title: string
   markdown: string
@@ -14,9 +22,14 @@ interface SaveQueueOptions {
   save: (changes: NoteChanges) => Promise<unknown>
   /** Receives flushed changes that have to wait for an earlier save to settle. */
   onQueued?: (changes: NoteChanges) => void
-  /** Called on the first failure after a success. */
+  /** Called on the first failure after a success, and whenever a manual flush fails. */
   onError?: (error: unknown) => void
   shouldRetry?: (error: unknown) => boolean
+}
+
+interface FlushOptions {
+  /** A save the user asked for: its failure is always reported. */
+  manual?: boolean
 }
 
 export type SaveQueue = ReturnType<typeof createSaveQueue>
@@ -36,6 +49,32 @@ export function createSaveQueue({
   let dueAt: number | undefined
   let running: Promise<void> | undefined
   let hasFailed = false
+  let state: SaveState = { status: 'idle' }
+  const listeners = new Set<() => void>()
+
+  function hasPendingChanges() {
+    return title !== undefined || serialize !== undefined
+  }
+
+  function getStatus(): SaveStatus {
+    if (running) return 'saving'
+    if (hasFailed) return 'error'
+    if (hasPendingChanges()) return 'pending'
+
+    return 'idle'
+  }
+
+  function publish(savedAt?: number) {
+    const next: SaveState = {
+      status: getStatus(),
+      savedAt: savedAt ?? state.savedAt,
+    }
+
+    if (next.status === state.status && next.savedAt === state.savedAt) return
+
+    state = next
+    listeners.forEach(listener => listener())
+  }
 
   function schedule(delay = SAVE_DELAY_MS) {
     dueAt ??= Date.now() + MAX_SAVE_DELAY_MS
@@ -59,7 +98,7 @@ export function createSaveQueue({
     return Object.keys(changes).length > 0 ? changes : undefined
   }
 
-  async function flush() {
+  async function flush({ manual = false }: FlushOptions = {}) {
     clearTimeout(timer)
     dueAt = undefined
 
@@ -76,13 +115,19 @@ export function createSaveQueue({
     title = undefined
     serialize = undefined
 
-    if (!changes) return
+    if (!changes) {
+      publish(manual && !hasFailed ? Date.now() : undefined)
+
+      return
+    }
 
     running = save(changes)
       .then(
         () => {
           saved = { ...saved, ...changes }
           hasFailed = false
+
+          return true
         },
         (error: unknown) => {
           if (shouldRetry(error)) {
@@ -93,13 +138,17 @@ export function createSaveQueue({
             schedule(RETRY_DELAY_MS)
           }
 
-          if (!hasFailed) onError?.(error)
+          if (!hasFailed || manual) onError?.(error)
           hasFailed = true
+
+          return false
         }
       )
-      .finally(() => {
+      .then((succeeded) => {
         running = undefined
+        publish(succeeded && !hasPendingChanges() ? Date.now() : undefined)
       })
+    publish()
 
     await running
   }
@@ -108,14 +157,26 @@ export function createSaveQueue({
     setTitle(value: string) {
       title = value
       schedule()
+      publish()
     },
     setMarkdown(value: () => string) {
       serialize = value
       schedule()
+      publish()
     },
     flush,
     hasUnsavedChanges() {
-      return title !== undefined || serialize !== undefined || running !== undefined
+      return hasPendingChanges() || running !== undefined
+    },
+    getState() {
+      return state
+    },
+    subscribe(listener: () => void) {
+      listeners.add(listener)
+
+      return () => {
+        listeners.delete(listener)
+      }
     },
   }
 }

@@ -12,6 +12,7 @@ import { NOTE_TITLE_MAX_LENGTH } from '@/utils/schemas'
 import type { MarkdownEditorHandle } from './markdown-editor'
 import { MarkdownEditor } from './markdown-editor'
 import { createSaveQueue } from './save-queue'
+import { registerSaveQueue } from './save-status'
 
 type EditableNote = Pick<Note, 'id' | 'title' | 'markdown'>
 
@@ -172,6 +173,8 @@ function useAutosave(note: EditableNote) {
     })
   )
 
+  useEffect(() => registerSaveQueue(note.id, queue), [note.id, queue])
+
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') void queue.flush()
@@ -181,16 +184,34 @@ function useAutosave(note: EditableNote) {
 
       if (queue.hasUnsavedChanges()) event.preventDefault()
     }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isSaveShortcut(event)) return
+
+      event.preventDefault()
+      if (!event.repeat) void queue.flush({ manual: true })
+    }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('keydown', handleKeyDown)
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener('keydown', handleKeyDown)
       void queue.flush()
     }
   }, [queue])
 
   return queue
+}
+
+/** ⌘S / Ctrl+S, which the browser would otherwise turn into "Save Page As". */
+function isSaveShortcut(event: KeyboardEvent) {
+  return (
+    event.key.toLowerCase() === 's'
+    && (event.metaKey || event.ctrlKey)
+    && !event.altKey
+    && !event.shiftKey
+  )
 }

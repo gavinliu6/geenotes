@@ -1,9 +1,14 @@
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query'
-import { getRouteApi, Link as RouterLink } from '@tanstack/react-router'
+import {
+  getRouteApi,
+  Link as RouterLink,
+  useParams
+} from '@tanstack/react-router'
 import { ArrowDownIcon, ArrowUpIcon, EllipsisIcon } from 'lucide-react'
 import type * as React from 'react'
 import { useEffect, useId, useRef, useState } from 'react'
 
+import { SaveStatusDot } from '@/components/save-status-dot'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/components/ui/link'
 import { Loader } from '@/components/ui/loader'
@@ -72,6 +77,7 @@ export function NoteList({ className, onNavigate }: NoteListProps) {
   const headingId = useId()
   const { timeZone, now: loadedNow } = appRoute.useLoaderData()
   const { sort, changeSort } = useNoteListSort('NoteList')
+  const { noteId: activeNoteId } = useParams({ strict: false })
   const now = useNow(loadedNow, timeZone)
   const {
     data,
@@ -170,6 +176,7 @@ export function NoteList({ className, onNavigate }: NoteListProps) {
                           note={note}
                           date={note[dateField]}
                           label={group.format.format(note[dateField])}
+                          isActive={note.id === activeNoteId}
                           onNavigate={onNavigate}
                         />
                       ))}
@@ -186,6 +193,7 @@ export function NoteList({ className, onNavigate }: NoteListProps) {
                     note={note}
                     date={note.updatedAt}
                     label={formatNoteTime(note.updatedAt, timeZone, now)}
+                    isActive={note.id === activeNoteId}
                     onNavigate={onNavigate}
                   />
                 ))}
@@ -205,10 +213,11 @@ interface NoteLinkProps {
   note: NoteListItem
   date: Date
   label: string
+  isActive: boolean
   onNavigate?: () => void
 }
 
-function NoteLink({ note, date, label, onNavigate }: NoteLinkProps) {
+function NoteLink({ note, date, label, isActive, onNavigate }: NoteLinkProps) {
   return (
     <li>
       <Link
@@ -223,17 +232,19 @@ function NoteLink({ note, date, label, onNavigate }: NoteLinkProps) {
           />
         )}
         className="
-          flex w-full flex-col items-stretch gap-0.5 rounded-md px-2 py-1.5
-          text-sm
+          flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm
           hover:bg-muted
           data-[status=active]:bg-muted
           pressed:bg-muted
         "
       >
-        <span className="truncate font-medium">{getDisplayTitle(note.title)}</span>
-        <time dateTime={date.toISOString()} className="text-xs">
-          {label}
-        </time>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="truncate font-medium">{getDisplayTitle(note.title)}</span>
+          <time dateTime={date.toISOString()} className="text-xs">
+            {label}
+          </time>
+        </span>
+        {isActive && <SaveStatusDot noteId={note.id} />}
       </Link>
     </li>
   )
