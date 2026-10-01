@@ -1,10 +1,11 @@
 import { Crepe } from '@milkdown/crepe'
-import { editorViewOptionsCtx, serializerCtx } from '@milkdown/kit/core'
+import { editorViewOptionsCtx } from '@milkdown/kit/core'
 
 import { toastManager } from '@/components/ui/toast'
 import { uploadImage } from '@/utils/uploads.functions'
 
 import { alertCommands } from './alert'
+import { changeListener } from './change-listener'
 import { codeCopyFeedback, linkCopyFeedback } from './copy-feedback'
 import { failedImages } from './failed-images'
 import { createFeatureConfigs, features } from './features'
@@ -65,14 +66,7 @@ export function createCrepe(
     .use(alertCommands)
     .use(quoteKeymap)
     .use(slashMenuHighlight)
-
-  crepe.on((api) => {
-    api.updated((ctx, doc) => {
-      const serialize = ctx.get(serializerCtx)
-
-      onChange(() => serialize(doc))
-    })
-  })
+    .use(changeListener(onChange))
 
   return crepe
 }
