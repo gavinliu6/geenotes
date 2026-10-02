@@ -2,7 +2,7 @@ import { inlineCodeSchema } from '@milkdown/kit/preset/commonmark'
 import { closeHistory, isHistoryTransaction } from '@milkdown/kit/prose/history'
 import { keydownHandler } from '@milkdown/kit/prose/keymap'
 import type { MarkType, Node } from '@milkdown/kit/prose/model'
-import type { Command, Transaction } from '@milkdown/kit/prose/state'
+import type { Command, EditorState, Transaction } from '@milkdown/kit/prose/state'
 import { Plugin, PluginKey, TextSelection } from '@milkdown/kit/prose/state'
 import type { Mappable } from '@milkdown/kit/prose/transform'
 import { Mapping } from '@milkdown/kit/prose/transform'
@@ -72,6 +72,13 @@ export const backtickPairs = $prose((ctx) => {
     },
   })
 })
+
+/** Saves pending pairs as code without moving the caret or changing the document being edited. */
+export function documentWithPendingInlineCode(state: EditorState) {
+  const pair = key.getState(state)
+
+  return pair ? convertPair(state.tr, pair, state.schema.marks.inlineCode).doc : state.doc
+}
 
 function convertPair(tr: Transaction, pair: Span, code: MarkType) {
   return tr
