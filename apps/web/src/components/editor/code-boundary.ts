@@ -63,15 +63,14 @@ const codeEdges = $prose((ctx) => {
     return (inside && !edge.end) || !Mark.sameSet($pos.marks(), marks) ? marks : null
   }
 
-  /** ProseMirror carries the marks of deleted text over to the next input, which would bring back code that was deleted in full. */
-  const withoutDeletedCode = ({ storedMarks, selection, tr }: EditorState) => {
-    const marks = selection.$head.marks()
+  /** ProseMirror carries the marks of deleted text over to the next input, which would bring back code or a link that was deleted in full. */
+  const withoutDeletedMarks = ({ storedMarks, selection: { $head }, tr }: EditorState) => {
+    const touching = [...$head.nodeBefore?.marks ?? [], ...$head.nodeAfter?.marks ?? []]
+    const kept = storedMarks?.filter(({ type }) => (type !== code && type !== link) || type.isInSet(touching))
 
-    if (!storedMarks || !code.isInSet(storedMarks) || code.isInSet(marks)) return null
+    if (!kept || kept.length === storedMarks?.length) return null
 
-    const kept = code.removeFromSet(storedMarks)
-
-    return tr.setStoredMarks(Mark.sameSet(kept, marks) ? null : kept).setMeta(key, true)
+    return tr.setStoredMarks(Mark.sameSet(kept, $head.marks()) ? null : kept).setMeta(key, true)
   }
 
   const withSide = (state: EditorState, edge: Edge, inside: boolean) => {
@@ -91,7 +90,7 @@ const codeEdges = $prose((ctx) => {
       const edge = edgeOf(state)
       const edited = transactions.some(tr => tr.docChanged)
 
-      if (!edge) return edited ? withoutDeletedCode(state) : null
+      if (!edge) return edited ? withoutDeletedMarks(state) : null
       if (edited) {
         // Range edits inherit transaction marks; their head depends on selection direction.
         return oldState.selection instanceof TextSelection && oldState.selection.empty
