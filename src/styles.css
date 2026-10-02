@@ -74,6 +74,7 @@
   --transition-duration-exit: 150ms;
   --default-transition-duration: 150ms;
   --ease-fluid-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-fluid-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --cursor-interactive: pointer;
   --cursor-pending: default;
   --cursor-disabled: not-allowed;
@@ -211,7 +212,8 @@
   --primary-disabled: var(--primary-disabled);
   --animate-loader-blades: loader-blades 0.8s steps(8, end) infinite;
   --animate-loader-dots: loader-dots 0.9s ease-in-out infinite;
-  --animate-save-breathe: save-breathe 1.2s ease-in-out 0.4s infinite;
+  --animate-save-breathe: save-breathe 1.2s var(--ease-fluid-in-out) 0.4s
+    infinite;
   @keyframes loader-blades {
     to {
       transform: rotate(1turn);
@@ -228,8 +230,7 @@
   }
   @keyframes save-breathe {
     50% {
-      transform: scale(var(--breathe-scale, 0.6));
-      opacity: 0.4;
+      opacity: 0.6;
     }
   }
 }

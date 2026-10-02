@@ -12,7 +12,7 @@ import { NOTE_TITLE_MAX_LENGTH } from '@/utils/schemas'
 import type { MarkdownEditorHandle } from './markdown-editor'
 import { MarkdownEditor } from './markdown-editor'
 import { createSaveQueue } from './save-queue'
-import { registerSaveQueue } from './save-status'
+import { getSaveQueue, registerSaveQueue } from './save-status'
 
 type EditableNote = Pick<Note, 'id' | 'title' | 'markdown'>
 
@@ -28,14 +28,15 @@ interface NoteEditorProps {
 
 /** Mount with `key={note.id}`: the note is only read on mount. */
 export function NoteEditor({ ref, note }: NoteEditorProps) {
-  const [title, setTitle] = useState(note.title)
-  const [initialMarkdown] = useState(note.markdown)
-  const [isNew] = useState(!note.title && !note.markdown)
+  const autosave = useAutosave(note)
+  const [draft] = useState(() => autosave.getDraft())
+  const [title, setTitle] = useState(draft.title)
+  const [initialMarkdown] = useState(draft.markdown)
+  const [isNew] = useState(!draft.title && !draft.markdown)
   const isHydrated = useHydrated()
   const [isLoading, setIsLoading] = useState(!isHydrated)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const bodyRef = useRef<MarkdownEditorHandle>(null)
-  const autosave = useAutosave(note)
 
   useImperativeHandle(ref, () => ({ flush: autosave.flush }), [autosave])
 
@@ -162,7 +163,7 @@ function useAutosave(note: EditableNote) {
   const queryClient = useQueryClient()
   const { mutateAsync: saveNote } = useSaveNote(note.id)
   const [queue] = useState(() =>
-    createSaveQueue({
+    getSaveQueue(note.id) ?? createSaveQueue({
       saved: { title: note.title, markdown: note.markdown },
       save: saveNote,
       onQueued: changes => applyNoteChanges(queryClient, note.id, changes),
@@ -176,14 +177,6 @@ function useAutosave(note: EditableNote) {
   useEffect(() => registerSaveQueue(note.id, queue), [note.id, queue])
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') void queue.flush()
-    }
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      void queue.flush()
-
-      if (queue.hasUnsavedChanges()) event.preventDefault()
-    }
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!isSaveShortcut(event)) return
 
@@ -191,15 +184,10 @@ function useAutosave(note: EditableNote) {
       if (!event.repeat) void queue.flush({ manual: true })
     }
 
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('beforeunload', handleBeforeUnload)
     window.addEventListener('keydown', handleKeyDown)
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('beforeunload', handleBeforeUnload)
       window.removeEventListener('keydown', handleKeyDown)
-      void queue.flush()
     }
   }, [queue])
 

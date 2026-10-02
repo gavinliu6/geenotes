@@ -2,6 +2,7 @@ import type { InfiniteData, QueryClient } from '@tanstack/react-query'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
+import { discardSaveQueue } from '@/components/editor/save-status'
 import { toastManager } from '@/components/ui/toast'
 import {
   createNote,
@@ -84,6 +85,7 @@ export function useDeleteNote() {
   return useMutation({
     mutationFn: (noteId: string) => deleteNote({ data: { noteId } }),
     onSuccess: async (_, noteId) => {
+      discardSaveQueue(noteId)
       updateNoteListItems(queryClient, items =>
         items.filter(item => item.id !== noteId)
       )

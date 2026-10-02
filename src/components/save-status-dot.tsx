@@ -1,5 +1,5 @@
 import { onlineManager } from '@tanstack/react-query'
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import { Focusable } from 'react-aria-components/Focusable'
 
 import type { SaveStatus } from '@/components/editor/save-queue'
@@ -24,9 +24,9 @@ const descriptions: Record<
 }
 
 const dotStyles: Record<DotState, string> = {
-  idle: 'opacity-0 duration-500',
+  idle: 'bg-success',
   pending: 'bg-warning',
-  saving: 'bg-warning animate-save-breathe',
+  saving: 'bg-warning',
   saved: 'bg-success',
   error: 'bg-danger',
   offline: 'border-warning',
@@ -36,22 +36,8 @@ const dotStyles: Record<DotState, string> = {
 export function SaveStatusDot({ noteId }: { noteId: string }) {
   const state = useSaveState(noteId)
   const isOnline = useIsOnline()
-  const savedAt = state?.savedAt
-  const [expiredAt, setExpiredAt] = useState(savedAt)
-
-  useEffect(() => {
-    if (savedAt === undefined) return
-
-    const id = setTimeout(() => setExpiredAt(savedAt), SAVED_HOLD_MS)
-
-    return () => clearTimeout(id)
-  }, [savedAt])
-
-  const dot = getDotState(
-    state?.status ?? 'idle',
-    isOnline,
-    savedAt !== undefined && savedAt !== expiredAt
-  )
+  const isFresh = useIsFreshSave(state?.savedAt)
+  const dot = getDotState(state?.status ?? 'idle', isOnline, isFresh)
   const description = dot === 'idle' ? undefined : descriptions[dot]
 
   return (
@@ -62,14 +48,47 @@ export function SaveStatusDot({ noteId }: { noteId: string }) {
           aria-label={description?.label ?? 'Saved'}
           className={cn(
             `
-              size-2 shrink-0 rounded-full border-[1.5px] border-transparent
-              transition-[background-color,border-color,opacity] duration-150
-              outline-none
-              motion-reduce:[--breathe-scale:1]
+              relative size-2 shrink-0 transition-opacity duration-enter
+              ease-fluid-out outline-none
             `,
-            dotStyles[dot]
+            dot === 'idle' && 'opacity-0 duration-exit'
           )}
-        />
+        >
+          <span
+            aria-hidden="true"
+            className={cn(
+              `
+                absolute inset-0 rounded-full border-[1.5px] border-transparent
+                transition-[background-color,border-color,opacity] duration-exit
+                ease-fluid-out
+              `,
+              dotStyles[dot],
+              dot === 'saving' && `
+                opacity-0 [transition-delay:0ms,0ms,400ms]
+                motion-reduce:opacity-100
+              `
+            )}
+          />
+          {/* Keep the current animation frame while its layer fades out. */}
+          <span
+            aria-hidden="true"
+            className={cn(
+              `
+                absolute inset-0 transition-opacity duration-exit ease-fluid-out
+                motion-reduce:hidden
+              `,
+              dot === 'saving' ? 'opacity-100 delay-400' : 'opacity-0'
+            )}
+          >
+            <span
+              className="
+                block size-full animate-save-breathe rounded-full bg-warning
+                motion-reduce:animate-none
+              "
+              style={{ animationPlayState: dot === 'saving' ? 'running' : 'paused' }}
+            />
+          </span>
+        </span>
       </Focusable>
       <TooltipContent hideArrow placement="bottom">
         {description?.label}
@@ -88,6 +107,26 @@ function getDotState(
   if (status !== 'error' && !isOnline) return 'offline'
 
   return status
+}
+
+function useIsFreshSave(savedAt: number | undefined) {
+  const subscribe = useCallback((listener: () => void) => {
+    if (savedAt === undefined) return () => {}
+
+    // Reopening a note must use the remainder of its original success feedback.
+    const remaining = savedAt + SAVED_HOLD_MS - Date.now()
+    if (remaining <= 0) return () => {}
+
+    const id = setTimeout(listener, remaining)
+
+    return () => clearTimeout(id)
+  }, [savedAt])
+
+  return useSyncExternalStore(
+    subscribe,
+    () => savedAt !== undefined && Date.now() < savedAt + SAVED_HOLD_MS,
+    () => false
+  )
 }
 
 function useIsOnline() {

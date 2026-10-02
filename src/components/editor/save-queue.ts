@@ -20,7 +20,7 @@ interface SavedNote {
 interface SaveQueueOptions {
   saved: SavedNote
   save: (changes: NoteChanges) => Promise<unknown>
-  /** Receives flushed changes that have to wait for an earlier save to settle. */
+  /** Keeps the optimistic cache current while a save is running or edits are reverted. */
   onQueued?: (changes: NoteChanges) => void
   /** Called on the first failure after a success, and whenever a manual flush fails. */
   onError?: (error: unknown) => void
@@ -48,7 +48,9 @@ export function createSaveQueue({
   let timer: ReturnType<typeof setTimeout> | undefined
   let dueAt: number | undefined
   let running: Promise<void> | undefined
+  let inFlight: NoteChanges | undefined
   let hasFailed = false
+  let disposed = false
   let state: SaveState = { status: 'idle' }
   const listeners = new Set<() => void>()
 
@@ -99,6 +101,8 @@ export function createSaveQueue({
   }
 
   async function flush({ manual = false }: FlushOptions = {}) {
+    if (disposed) return
+
     clearTimeout(timer)
     dueAt = undefined
 
@@ -109,6 +113,8 @@ export function createSaveQueue({
     }
 
     while (running) await running
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- dispose() can run while this flush awaits an earlier save.
+    if (disposed) return
 
     const changes = collect()
 
@@ -116,27 +122,35 @@ export function createSaveQueue({
     serialize = undefined
 
     if (!changes) {
-      publish(manual && !hasFailed ? Date.now() : undefined)
+      const recovered = hasFailed
+
+      hasFailed = false
+      if (recovered) onQueued?.(saved)
+      publish(manual || recovered ? Date.now() : undefined)
 
       return
     }
 
+    inFlight = changes
     running = save(changes)
       .then(
         () => {
+          if (disposed) return false
+
           saved = { ...saved, ...changes }
           hasFailed = false
 
           return true
         },
         (error: unknown) => {
-          if (shouldRetry(error)) {
-            const { markdown } = changes
+          if (disposed) return false
 
-            title ??= changes.title
-            if (markdown !== undefined) serialize ??= () => markdown
-            schedule(RETRY_DELAY_MS)
-          }
+          const { markdown } = changes
+
+          // Even terminal failures must retain the draft until it is explicitly discarded.
+          title ??= changes.title
+          if (markdown !== undefined) serialize ??= () => markdown
+          if (shouldRetry(error)) schedule(RETRY_DELAY_MS)
 
           if (!hasFailed || manual) onError?.(error)
           hasFailed = true
@@ -146,6 +160,9 @@ export function createSaveQueue({
       )
       .then((succeeded) => {
         running = undefined
+        inFlight = undefined
+        if (disposed) return
+
         publish(succeeded && !hasPendingChanges() ? Date.now() : undefined)
       })
     publish()
@@ -155,18 +172,39 @@ export function createSaveQueue({
 
   return {
     setTitle(value: string) {
+      if (disposed) return
+
       title = value
       schedule()
       publish()
     },
     setMarkdown(value: () => string) {
+      if (disposed) return
+
       serialize = value
       schedule()
       publish()
     },
     flush,
+    /** Restores the latest local content when an editor remounts during a save or retry. */
+    getDraft(): SavedNote {
+      return {
+        ...saved,
+        ...inFlight,
+        ...(title !== undefined && { title }),
+        ...(serialize && { markdown: serialize() }),
+      }
+    },
+    /** Used after a successful deletion; late requests must not restart this queue. */
+    dispose() {
+      disposed = true
+      clearTimeout(timer)
+      title = undefined
+      serialize = undefined
+      listeners.clear()
+    },
     hasUnsavedChanges() {
-      return hasPendingChanges() || running !== undefined
+      return !disposed && (hasPendingChanges() || running !== undefined)
     },
     getState() {
       return state
