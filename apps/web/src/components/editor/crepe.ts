@@ -13,6 +13,7 @@ import { failedImages } from './failed-images'
 import { createFeatureConfigs, features } from './features'
 import { backtickPairs, codeLinkTails, innermostInlineCode } from './inline-code'
 import { languagePickerKeys } from './language-picker'
+import { linkSyntax } from './link-syntax'
 import { withMarkdownDialect } from './markdown'
 import { quoteKeymap } from './quote'
 import { slashMenuHighlight } from './slash-menu'
@@ -74,6 +75,7 @@ export function createCrepe(
     .use(innermostInlineCode)
     .use(backtickPairs)
     .use(codeLinkTails)
+    .use(linkSyntax)
     .use(slashMenuHighlight)
     .use(changeListener(onChange))
 
