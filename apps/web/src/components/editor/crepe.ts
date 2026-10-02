@@ -6,6 +6,7 @@ import { toastManager } from '@/components/ui/toast'
 import { uploadImage } from '@/utils/uploads.functions'
 
 import { alertCommands } from './alert'
+import { bracketPairs } from './bracket-pairs'
 import { changeListener } from './change-listener'
 import { codeBoundary } from './code-boundary'
 import { codeCopyFeedback, linkCopyFeedback } from './copy-feedback'
@@ -75,6 +76,7 @@ export function createCrepe(
     .use(innermostInlineCode)
     .use(backtickPairs)
     .use(codeLinkTails)
+    .use(bracketPairs)
     .use(linkSyntax)
     .use(slashMenuHighlight)
     .use(changeListener(onChange))
