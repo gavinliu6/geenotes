@@ -1,24 +1,18 @@
 import { InitReady, marksCtx, schemaTimerCtx } from '@milkdown/kit/core'
 import { inlineCodeSchema, linkSchema } from '@milkdown/kit/preset/commonmark'
-import { closeHistory, isHistoryTransaction } from '@milkdown/kit/prose/history'
 import { keydownHandler } from '@milkdown/kit/prose/keymap'
 import type { MarkType, Node } from '@milkdown/kit/prose/model'
-import type { Command, EditorState, Transaction } from '@milkdown/kit/prose/state'
+import type { Command, Transaction } from '@milkdown/kit/prose/state'
 import { Plugin, PluginKey, TextSelection } from '@milkdown/kit/prose/state'
-import type { Mappable } from '@milkdown/kit/prose/transform'
-import { Mapping } from '@milkdown/kit/prose/transform'
 import type { EditorView } from '@milkdown/kit/prose/view'
 import { Decoration, DecorationSet } from '@milkdown/kit/prose/view'
 import { $prose, addTimer } from '@milkdown/kit/utils'
 
-interface Span {
-  from: number
-  to: number
-}
+import type { Span } from './typed-syntax'
+import { convertOnLeave, plainText, wordChar } from './typed-syntax'
 
 const key = new PluginKey<Span | null>('backtickPairs')
 const linkTailsKey = new PluginKey<DecorationSet>('codeLinkTails')
-const wordChar = /[\p{L}\p{N}_]/u
 
 /** Registers inline code as the last mark so it renders innermost: a Markdown code span can't hold other inline content, and an outer code mark splits a link around it into separate anchors. */
 export const innermostInlineCode = addTimer(async (ctx) => {
@@ -51,64 +45,17 @@ export const codeLinkTails = $prose((ctx) => {
 export const backtickPairs = $prose((ctx) => {
   const code = inlineCodeSchema.type(ctx)
 
-  return new Plugin<Span | null>({
+  return convertOnLeave({
     key,
-    state: {
-      init: () => null,
-      apply: (tr, pending, _, { doc, selection }) => {
-        const typedOver = tr.getMeta(key) as Span | undefined
-
-        if (typedOver) return typedOver
-
-        if (tr.docChanged && !isHistoryTransaction(tr)) {
-          const edited = pairsAround(doc, selection, code).find(pair => isEdited(tr, pair))
-
-          if (edited) return edited
-        }
-
-        const pair = pending && mapPair(tr.mapping, pending, doc, code)
-
-        return pair && (touches(selection, pair) || tr.getMeta('composition')) ? pair : null
-      },
-    },
-    appendTransaction: (transactions, oldState, state) => {
-      if (transactions.some(tr => tr.getMeta('composition'))) return null
-
-      const pending = key.getState(oldState)
-      const mapping = new Mapping(transactions.flatMap(tr => tr.mapping.maps))
-      const pair = pending && mapPair(mapping, pending, state.doc, code)
-
-      if (!pair || touches(state.selection, pair)) return null
-
-      return closeHistory(convertPair(state.tr, pair, code))
-    },
+    around: (doc, range) => pairsAround(doc, range, code),
+    convert: (tr, pair) => convertPair(tr, pair, code),
     props: {
       handleTextInput: (view, from, to, text) =>
         text === '`' && !view.composing && typeBacktick(view, from, to, code),
       handleKeyDown: keydownHandler({ Backspace: deleteEmptyPair(code) }),
-      handleDOMEvents: {
-        compositionend: (view) => {
-          setTimeout(() => {
-            if (view.isDestroyed || view.composing) return
-
-            const pending = key.getState(view.state)
-
-            if (pending && !touches(view.state.selection, pending)) view.dispatch(view.state.tr)
-          })
-
-          return false
-        },
-      },
     },
   })
 })
-
-/** Saves pending pairs as code without moving the caret or changing the document being edited. */
-export function documentWithPendingInlineCode(state: EditorState) {
-  const pair = key.getState(state)
-
-  return pair ? convertPair(state.tr, pair, state.schema.marks.inlineCode).doc : state.doc
-}
 
 function convertPair(tr: Transaction, pair: Span, code: MarkType) {
   return tr
@@ -193,21 +140,6 @@ function deleteEmptyPair(code: MarkType): Command {
   }
 }
 
-/** The textblock's text with inline nodes and inline code masked out, since a pair can't span either. */
-function plainText(parent: Node, code: MarkType) {
-  if (!parent.isTextblock || parent.type.spec.code) return null
-
-  let text = ''
-
-  parent.forEach((child) => {
-    text += child.isText && !code.isInSet(child.marks)
-      ? child.textContent
-      : '\uFFFC'.repeat(child.nodeSize)
-  })
-
-  return text
-}
-
 /** Pairs backticks left to right like Markdown. */
 function pairsOf(text: string) {
   return Array.from(text.matchAll(/`([^`\uFFFC]*)`/g), match => ({
@@ -233,31 +165,4 @@ function pairsAround(doc: Node, { from, to }: Span, code: MarkType): Span[] {
   return pairsOf(text)
     .filter(pair => !pair.empty && start + pair.from <= from && to <= start + pair.to)
     .map(pair => ({ from: start + pair.from, to: start + pair.to }))
-}
-
-function mapPair(mapping: Mappable, pair: Span, doc: Node, code: MarkType) {
-  const from = mapping.map(pair.from, 1)
-  const to = mapping.map(pair.to, -1)
-
-  if (to - from < 3) return null
-
-  return pairsAround(doc, { from: from + 1, to: to - 1 }, code)
-    .find(mapped => mapped.from === from && mapped.to === to) ?? null
-}
-
-function isEdited(tr: Transaction, pair: Span) {
-  return tr.mapping.maps.some((map, index) => {
-    const rest = tr.mapping.slice(index + 1)
-    let edited = false
-
-    map.forEach((_oldFrom, _oldTo, from, to) => {
-      edited ||= rest.map(from, -1) < pair.to && rest.map(to, 1) > pair.from
-    })
-
-    return edited
-  })
-}
-
-function touches(selection: Span, pair: Span) {
-  return selection.from <= pair.to && selection.to >= pair.from
 }
