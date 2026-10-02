@@ -21,6 +21,7 @@ import { TextField } from '@/components/ui/text-field'
 import { toastManager } from '@/components/ui/toast'
 import { getSession } from '@/lib/auth.functions'
 import { authClient } from '@/lib/auth-client'
+import { cn } from '@/lib/utils'
 
 const searchSchema = z.object({
   // Only accept same-origin paths so a crafted link can't bounce a signed-in
@@ -406,6 +407,37 @@ function TwoFactorSignInForm({
 
 /* -------------------------------------------------------------------------- */
 
+function HeroImage({
+  className,
+  src,
+  srcSet,
+}: {
+  className: string
+  src: string
+  srcSet: string
+}) {
+  return (
+    <img
+      className={cn(
+        `
+          h-auto w-full rounded-2xl bg-muted outline -outline-offset-1
+          outline-black/5
+          dark:outline-white/10
+        `,
+        className
+      )}
+      src={src}
+      srcSet={srcSet}
+      sizes="(min-width: 80rem) 36rem, (min-width: 28rem) 25rem, calc(100vw - 3rem)"
+      width={1200}
+      height={1500}
+      alt=""
+      loading="lazy"
+      decoding="async"
+    />
+  )
+}
+
 function LoginPage() {
   const [activeProvider, setActiveProvider] = useState<SocialProvider | null>(null)
   const [isCredentialsPending, setIsCredentialsPending] = useState(false)
@@ -546,19 +578,18 @@ function LoginPage() {
                 xl:mr-0 xl:max-w-[clamp(18rem,(100svh-10rem)*4/5,36rem)]
               "
               >
-                <img
-                  className="
-                    h-auto w-full rounded-2xl bg-muted outline -outline-offset-1
-                    outline-black/5
-                    dark:outline-white/10 dark:brightness-85
-                  "
+                <HeroImage
+                  className="dark:hidden"
                   src="/login-hero.webp"
                   srcSet="/login-hero-1x.webp 600w, /login-hero.webp 1200w"
-                  sizes="(min-width: 80rem) 36rem, (min-width: 28rem) 25rem, calc(100vw - 3rem)"
-                  width={1200}
-                  height={1500}
-                  alt=""
-                  decoding="async"
+                />
+                <HeroImage
+                  className="
+                    hidden
+                    dark:block
+                  "
+                  src="/login-hero-dark.webp"
+                  srcSet="/login-hero-dark-1x.webp 600w, /login-hero-dark.webp 1200w"
                 />
               </div>
             </section>
