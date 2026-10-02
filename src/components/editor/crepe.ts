@@ -1,5 +1,6 @@
 import { Crepe } from '@milkdown/crepe'
 import { editorViewOptionsCtx } from '@milkdown/kit/core'
+import { inlineCodeInputRule } from '@milkdown/kit/preset/commonmark'
 
 import { toastManager } from '@/components/ui/toast'
 import { uploadImage } from '@/utils/uploads.functions'
@@ -9,6 +10,7 @@ import { changeListener } from './change-listener'
 import { codeCopyFeedback, linkCopyFeedback } from './copy-feedback'
 import { failedImages } from './failed-images'
 import { createFeatureConfigs, features } from './features'
+import { backtickPairs } from './inline-code'
 import { languagePickerKeys } from './language-picker'
 import { withMarkdownDialect } from './markdown'
 import { quoteKeymap } from './quote'
@@ -44,6 +46,8 @@ export function createCrepe(
     }),
   })
 
+  void crepe.editor.remove(inlineCodeInputRule)
+
   withMarkdownDialect(crepe.editor)
     .config((ctx) => {
       ctx.update(editorViewOptionsCtx, options => ({
@@ -65,6 +69,7 @@ export function createCrepe(
     .use(supSubCommands)
     .use(alertCommands)
     .use(quoteKeymap)
+    .use(backtickPairs)
     .use(slashMenuHighlight)
     .use(changeListener(onChange))
 
