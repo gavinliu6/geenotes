@@ -13,7 +13,7 @@ const popoverVariants = tv({
   slots: {
     popover:
       `
-        popover z-50 min-w-[max(var(--trigger-width),--spacing(32))]
+        z-50 min-w-[max(var(--trigger-width),--spacing(32))]
         origin-(--trigger-anchor-point) rounded-lg border
         border-(--overlay-border) bg-popover/(--popover-alpha)
         shadow-(--shadow-popover,var(--shadow-md))
@@ -35,7 +35,7 @@ const popoverVariants = tv({
       `,
     arrow:
       `
-        block hidden
+        hidden
         placement-left:-ml-px
         placement-right:-mr-px
         placement-top:-mt-px

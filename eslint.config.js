@@ -13,7 +13,7 @@ export default [
     settings: {
       'better-tailwindcss': {
         // tailwindcss 4: the path to the entry file of the css based tailwind config (eg: `src/global.css`)
-        entryPoint: 'src/styles.css',
+        entryPoint: 'apps/web/src/styles.css',
       },
     },
     plugins: {
@@ -44,7 +44,7 @@ export default [
     ignores: [
       'eslint.config.js',
       'prettier.config.js',
-      'worker-configuration.d.ts',
+      '**/worker-configuration.d.ts',
     ],
   },
 ]

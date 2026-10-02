@@ -9,11 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
-import { Route as SiteRouteImport } from './routes/_site'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedAppRouteImport } from './routes/_authed/_app'
-import { Route as SiteIndexRouteImport } from './routes/_site/index'
 import { Route as AuthedAppHomeRouteImport } from './routes/_authed/_app/home'
 import { Route as AuthedAppNotesRouteImport } from './routes/_authed/_app/notes'
 import { Route as AuthedAppSettingsRouteImport } from './routes/_authed/_app/settings'
@@ -23,12 +22,13 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthedAppNotesIndexRouteImport } from './routes/_authed/_app/notes/index'
 import { Route as AuthedAppNotesNoteIdRouteImport } from './routes/_authed/_app/notes/$noteId'
 
-const AuthedRoute = AuthedRouteImport.update({
-  id: '/_authed',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SiteRoute = SiteRouteImport.update({
-  id: '/_site',
+const AuthedRoute = AuthedRouteImport.update({
+  id: '/_authed',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -39,11 +39,6 @@ const LoginRoute = LoginRouteImport.update({
 const AuthedAppRoute = AuthedAppRouteImport.update({
   id: '/_app',
   getParentRoute: () => AuthedRoute,
-} as any)
-const SiteIndexRoute = SiteIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => SiteRoute,
 } as any)
 const AuthedAppHomeRoute = AuthedAppHomeRouteImport.update({
   id: '/home',
@@ -88,7 +83,7 @@ const AuthedAppNotesNoteIdRoute = AuthedAppNotesNoteIdRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof SiteIndexRoute
+  '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/home': typeof AuthedAppHomeRoute
   '/notes': typeof AuthedAppNotesRouteWithChildren
@@ -100,7 +95,7 @@ export interface FileRoutesByFullPath {
   '/notes/': typeof AuthedAppNotesIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof SiteIndexRoute
+  '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/home': typeof AuthedAppHomeRoute
   '/settings': typeof AuthedAppSettingsRoute
@@ -112,11 +107,10 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
-  '/_site': typeof SiteRouteWithChildren
   '/login': typeof LoginRoute
   '/_authed/_app': typeof AuthedAppRouteWithChildren
-  '/_site/': typeof SiteIndexRoute
   '/_authed/_app/home': typeof AuthedAppHomeRoute
   '/_authed/_app/notes': typeof AuthedAppNotesRouteWithChildren
   '/_authed/_app/settings': typeof AuthedAppSettingsRoute
@@ -152,11 +146,10 @@ export interface FileRouteTypes {
     | '/notes'
   id:
     | '__root__'
+    | '/'
     | '/_authed'
-    | '/_site'
     | '/login'
     | '/_authed/_app'
-    | '/_site/'
     | '/_authed/_app/home'
     | '/_authed/_app/notes'
     | '/_authed/_app/settings'
@@ -168,26 +161,26 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
-  SiteRoute: typeof SiteRouteWithChildren
   LoginRoute: typeof LoginRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed': {
       id: '/_authed'
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_site': {
-      id: '/_site'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof SiteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -203,13 +196,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthedAppRouteImport
       parentRoute: typeof AuthedRoute
-    }
-    '/_site/': {
-      id: '/_site/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof SiteIndexRouteImport
-      parentRoute: typeof SiteRoute
     }
     '/_authed/_app/home': {
       id: '/_authed/_app/home'
@@ -316,19 +302,9 @@ const AuthedRouteChildren: AuthedRouteChildren = {
 const AuthedRouteWithChildren =
   AuthedRoute._addFileChildren(AuthedRouteChildren)
 
-interface SiteRouteChildren {
-  SiteIndexRoute: typeof SiteIndexRoute
-}
-
-const SiteRouteChildren: SiteRouteChildren = {
-  SiteIndexRoute: SiteIndexRoute,
-}
-
-const SiteRouteWithChildren = SiteRoute._addFileChildren(SiteRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
-  SiteRoute: SiteRouteWithChildren,
   LoginRoute: LoginRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
