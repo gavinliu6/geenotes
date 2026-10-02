@@ -7,6 +7,7 @@ import { uploadImage } from '@/utils/uploads.functions'
 
 import { alertCommands } from './alert'
 import { changeListener } from './change-listener'
+import { codeBoundary } from './code-boundary'
 import { codeCopyFeedback, linkCopyFeedback } from './copy-feedback'
 import { failedImages } from './failed-images'
 import { createFeatureConfigs, features } from './features'
@@ -63,6 +64,7 @@ export function createCrepe(
     .use(failedImages)
     .use(trailingOnLoad)
     .use(taskListToggle)
+    .use(codeBoundary)
     .use(startBoundary(onExitStart))
     .use(codeCopy.plugin)
     .use(languagePickerKeys)
