@@ -1,4 +1,5 @@
 import { serializerCtx } from '@milkdown/kit/core'
+import type { Transaction } from '@milkdown/kit/prose/state'
 import { Plugin, PluginKey } from '@milkdown/kit/prose/state'
 import { $prose } from '@milkdown/kit/utils'
 
@@ -14,7 +15,9 @@ export function changeListener(onChange: (serialize: () => string) => void) {
       state: {
         init: () => null,
         apply: (tr, _, oldState, state) => {
-          if (tr.getMeta('addToHistory') === false) return null
+          const appended = tr.getMeta('appendedTransaction') as Transaction | undefined
+
+          if (tr.getMeta('addToHistory') === false || appended?.getMeta('addToHistory') === false) return null
           // Typing over a closing backtick can complete a pair without changing the document.
           if (!tr.docChanged && documentWithPendingInlineCode(oldState).eq(documentWithPendingInlineCode(state))) return null
 
