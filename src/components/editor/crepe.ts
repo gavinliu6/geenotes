@@ -10,7 +10,7 @@ import { changeListener } from './change-listener'
 import { codeCopyFeedback, linkCopyFeedback } from './copy-feedback'
 import { failedImages } from './failed-images'
 import { createFeatureConfigs, features } from './features'
-import { backtickPairs } from './inline-code'
+import { backtickPairs, codeLinkTails, innermostInlineCode } from './inline-code'
 import { languagePickerKeys } from './language-picker'
 import { withMarkdownDialect } from './markdown'
 import { quoteKeymap } from './quote'
@@ -69,7 +69,9 @@ export function createCrepe(
     .use(supSubCommands)
     .use(alertCommands)
     .use(quoteKeymap)
+    .use(innermostInlineCode)
     .use(backtickPairs)
+    .use(codeLinkTails)
     .use(slashMenuHighlight)
     .use(changeListener(onChange))
 
