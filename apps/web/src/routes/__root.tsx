@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 
+import { NotFoundPage } from '@/components/not-found'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toast'
 
@@ -18,7 +19,7 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
       {
         charSet: 'utf-8',
@@ -28,7 +29,9 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'A simple, Markdown-first note-taking web app | Geenotes',
+        title: match._notFound
+          ? '404 | Geenotes'
+          : 'A simple, Markdown-first note-taking web app | Geenotes',
       },
       {
         name: 'theme-color',
@@ -70,6 +73,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
     ],
   }),
+  notFoundComponent: NotFoundPage,
   shellComponent: RootDocument,
 })
 

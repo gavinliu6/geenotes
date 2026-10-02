@@ -4,6 +4,7 @@ import { EyeIcon, EyeOffIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { z } from 'zod'
 
+import { SiteHeader } from '@/components/layouts/site-header'
 import {
   focusFirstDigit,
   TOTP_LENGTH,
@@ -432,29 +433,7 @@ function LoginPage() {
 
   return (
     <div className="min-h-svh">
-      <header>
-        <div className="
-          mx-auto flex w-full max-w-8xl items-center
-          max-[1488px]:px-6
-        "
-        >
-          <div className="inline-flex h-16 items-center">
-            <span className="
-              text-yellow-500
-              dark:text-yellow-400
-            "
-            >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M0 10C0 4.47715 4.47715 0 10 0V2C5.58172 2 2 5.58172 2 10C2 14.4183 5.58172 18 10 18C14.4183 18 18 14.4183 18 10C18 8.39616 17.4247 7.34036 16.6123 6.6543C15.7709 5.94393 14.582 5.55487 13.2695 5.49902C11.9603 5.44339 10.6117 5.72442 9.52637 6.25684C8.42891 6.79521 7.70991 7.53141 7.44824 8.31641L5.55176 7.68359C6.04014 6.21879 7.25874 5.14225 8.64551 4.46191C10.0444 3.77569 11.7274 3.4317 13.3555 3.50098C14.9802 3.57019 16.6355 4.05636 17.9033 5.12695C19.2 6.22214 20 7.85404 20 10C20 15.5228 15.5228 20 10 20C4.47715 20 0 15.5228 0 10Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </span>
-            <span className="mt-0.5 ml-2 text-[0.9375rem] font-medium">Geenotes</span>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
       <main>
         <div className="mx-auto w-full max-w-8xl">
           <div className="

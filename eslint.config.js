@@ -20,6 +20,10 @@ export default [
       'simple-import-sort': simpleImportSort,
     },
     rules: {
+      'better-tailwindcss/no-unknown-classes': [
+        'error',
+        { ignore: ['^markdown-body$'] },
+      ],
       'import/no-cycle': 'off',
       'import/order': 'off',
       'sort-imports': 'off',
