@@ -6,6 +6,8 @@ export default defineConfig({
     compatibilityDate: '2026-09-18',
     compatibilityFlags: ['nodejs_compat'],
     entrypoint: '@tanstack/react-start/server-entry',
+    domains: ['web.geenotes.com'],
+    workersDev: false,
     env: {
       D1: bindings.d1({
         name: 'geenotes',
