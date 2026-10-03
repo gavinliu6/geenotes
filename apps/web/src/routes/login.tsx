@@ -557,7 +557,7 @@ function LoginPage() {
                         transition-colors
                         hover:text-fg
                       "
-                      href="/notes/01gd4d3tgrrfqeda94gdbtdk5c"
+                      href="/notes/01m404sj2w252q645hd5wpq99t"
                       target="_blank"
                       rel="noreferrer"
                     >
