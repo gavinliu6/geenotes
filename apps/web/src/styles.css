@@ -13,6 +13,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Chinese and English curly quotes share code points, so render them with a Chinese font */
+@font-face {
+  font-family: 'Chinese Quotes';
+  src:
+    local('PingFang SC Regular'), local('PingFang SC'), local('SimHei'),
+    local('Source Han Sans SC');
+  unicode-range: U+2018, U+2019, U+201C, U+201D; /* ‘ ’ “ ” */
+}
+
 @theme inline {
   --breakpoint-*: initial;
   --breakpoint-xs: 30rem;
@@ -27,8 +36,8 @@
   --container-9xl: 100rem;
   --font-heading: var(--font-sans);
   --font-sans:
-    'Geist Variable', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC',
-    sans-serif;
+    'Chinese Quotes', 'Geist Variable', 'PingFang SC', 'Microsoft YaHei',
+    'Noto Sans CJK SC', sans-serif;
   --font-serif: 'Noto Serif Variable', serif;
   --font-mono: 'Geist Mono Variable', monospace;
   --color-sidebar-ring: var(--sidebar-ring);
