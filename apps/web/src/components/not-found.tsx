@@ -48,7 +48,7 @@ export function NotFoundPage() {
                 className: 'px-4',
               })}
             >
-              Return to homepage
+              Take me home
             </Link>
             {isHydrated && canGoBack && (
               <Button
@@ -57,7 +57,7 @@ export function NotFoundPage() {
                 className="px-4"
                 onPress={() => router.history.back()}
               >
-                Return to previous page
+                Back to previous page
               </Button>
             )}
           </div>
