@@ -4,6 +4,7 @@ import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { haveIBeenPwned } from 'better-auth/plugins/haveibeenpwned'
 import { twoFactor } from 'better-auth/plugins/two-factor'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
+import { env } from 'cloudflare:workers'
 
 import { db } from '@/db'
 import {
@@ -86,8 +87,8 @@ export const auth = betterAuth({
   ],
   socialProviders: {
     github: {
-      clientId: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      clientId: env.GITHUB_CLIENT_ID,
+      clientSecret: env.GITHUB_CLIENT_SECRET,
     },
   },
 })

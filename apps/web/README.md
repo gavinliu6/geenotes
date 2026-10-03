@@ -42,15 +42,14 @@ npm run check
 
 ## Deploy to Cloudflare Workers
 
-This project uses the Cloudflare Vite plugin (configured in `vite.config.ts`) and `wrangler.jsonc`:
+This project uses the Cloudflare Vite plugin (configured in `vite.config.ts`) and the [`cf` CLI](https://blog.cloudflare.com/cloudflare-cf-cli-launch/), with the Worker configured in `cloudflare.config.ts`:
 
-1. Install Wrangler: `npm install -g wrangler`
-2. Authenticate: `wrangler login`
-3. Deploy: `npx wrangler deploy`
+1. Authenticate: `pnpm exec cf auth login`
+2. Deploy: `pnpm run deploy`
 
-For production env vars, run `wrangler secret put MY_VAR` for each secret listed in `.env.example`. Public (non-secret) vars go in `wrangler.jsonc` under `vars`.
+Secrets are declared in `cloudflare.config.ts` with `bindings.secret()`. Set their production values with `pnpm exec cf workers secrets update <NAME> --worker geenotes-web`; locally they are read from `.env.local`.
 
-KV, D1, R2, and Durable Object bindings are configured in `wrangler.jsonc` — see https://developers.cloudflare.com/workers/wrangler/configuration/.
+`pnpm cf-typegen` generates the Worker types into `.cloudflare/types`, which `tsconfig.json` includes.
 
 ## T3Env
 
