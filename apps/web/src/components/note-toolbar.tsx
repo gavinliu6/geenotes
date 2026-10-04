@@ -1,21 +1,15 @@
-import {
-  CheckIcon,
-  ChevronDownIcon,
-  CopyIcon,
-  EllipsisIcon,
-  FoldHorizontalIcon,
-  Trash2Icon,
-  UnfoldHorizontalIcon
-} from 'lucide-react'
+import { ArrowsInLineHorizontalIcon, ArrowsOutLineHorizontalIcon } from '@phosphor-icons/react'
+import { ChevronDownIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { COPIED_DURATION } from '@/components/editor/copy-feedback'
-import { Markdown } from '@/components/icons'
+import { Check, Copy, Markdown, Trash } from '@/components/icons'
 import { NoteListDrawer } from '@/components/note-list-drawer'
 import { Button } from '@/components/ui/button'
 import { Group } from '@/components/ui/group'
 import { Menu, MenuContent, MenuItem, MenuItemLabel } from '@/components/ui/menu'
 import { Popover } from '@/components/ui/popover'
+import { Separator } from '@/components/ui/separator'
 import { toastManager } from '@/components/ui/toast'
 import { Tooltip, TooltipContent } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -53,7 +47,7 @@ export function NoteToolbar({
         <NoteListDrawer />
       </div>
       <div className="ml-auto flex items-center gap-2">
-        <CopyPageButton note={note} />
+        <PageActions note={note} onDelete={onDelete} />
         <Tooltip>
           <Button
             variant="quiet"
@@ -66,7 +60,9 @@ export function NoteToolbar({
             "
             onPress={() => onFullWidthChange(!isFullWidth)}
           >
-            {isFullWidth ? <FoldHorizontalIcon /> : <UnfoldHorizontalIcon />}
+            {isFullWidth
+              ? <ArrowsInLineHorizontalIcon className="size-4" />
+              : <ArrowsOutLineHorizontalIcon className="size-4" />}
           </Button>
           <TooltipContent
             hideArrow
@@ -74,13 +70,15 @@ export function NoteToolbar({
           >{widthToggleLabel}
           </TooltipContent>
         </Tooltip>
-        <NoteActionsMenu onDelete={onDelete} />
       </div>
     </div>
   )
 }
 
-function CopyPageButton({ note }: Pick<NoteToolbarProps, 'note'>) {
+function PageActions({
+  note,
+  onDelete,
+}: Pick<NoteToolbarProps, 'note' | 'onDelete'>) {
   const [copiedAt, setCopiedAt] = useState<number>()
   const isCopied = copiedAt !== undefined
 
@@ -101,18 +99,22 @@ function CopyPageButton({ note }: Pick<NoteToolbarProps, 'note'>) {
     }
   }
 
+  const confirmDelete = () => {
+    if (window.confirm('Delete this note? This cannot be undone.')) onDelete()
+  }
+
   return (
     <Group aria-label="Page actions">
-      <Button size="sm" onPress={copyPage}>
+      <Button variant="outline" size="sm" onPress={copyPage}>
         <span className="copy-feedback" data-copied={isCopied || undefined}>
-          <CopyIcon />
-          <CheckIcon />
+          <Copy className="text-fg-muted" />
+          <Check />
         </span>
         Copy page
       </Button>
       <Menu>
-        <Button size="sm" isIconOnly aria-label="More page actions">
-          <ChevronDownIcon />
+        <Button variant="outline" size="sm" isIconOnly aria-label="More page actions">
+          <ChevronDownIcon className="text-fg-muted" />
         </Button>
         <Popover placement="bottom end">
           <MenuContent>
@@ -124,40 +126,14 @@ function CopyPageButton({ note }: Pick<NoteToolbarProps, 'note'>) {
               <Markdown />
               <MenuItemLabel>View as Markdown</MenuItemLabel>
             </MenuItem>
+            <Separator />
+            <MenuItem variant="danger" textValue="Delete" onAction={confirmDelete}>
+              <Trash />
+              <MenuItemLabel>Delete</MenuItemLabel>
+            </MenuItem>
           </MenuContent>
         </Popover>
       </Menu>
     </Group>
-  )
-}
-
-function NoteActionsMenu({ onDelete }: Pick<NoteToolbarProps, 'onDelete'>) {
-  const confirmDelete = () => {
-    if (window.confirm('Delete this note? This cannot be undone.')) onDelete()
-  }
-
-  return (
-    <Menu>
-      <Tooltip>
-        <Button
-          variant="quiet"
-          size="sm"
-          isIconOnly
-          aria-label="More actions"
-          className="text-fg-muted"
-        >
-          <EllipsisIcon />
-        </Button>
-        <TooltipContent hideArrow placement="bottom">More actions</TooltipContent>
-      </Tooltip>
-      <Popover placement="bottom end">
-        <MenuContent>
-          <MenuItem variant="danger" textValue="Delete" onAction={confirmDelete}>
-            <Trash2Icon />
-            <MenuItemLabel>Delete</MenuItemLabel>
-          </MenuItem>
-        </MenuContent>
-      </Popover>
-    </Menu>
   )
 }
