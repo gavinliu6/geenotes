@@ -1,18 +1,16 @@
 import { InitReady, marksCtx, schemaTimerCtx } from '@milkdown/kit/core'
-import { inlineCodeSchema, linkSchema } from '@milkdown/kit/preset/commonmark'
+import { inlineCodeSchema } from '@milkdown/kit/preset/commonmark'
 import { keydownHandler } from '@milkdown/kit/prose/keymap'
 import type { MarkType, Node } from '@milkdown/kit/prose/model'
 import type { Command, Transaction } from '@milkdown/kit/prose/state'
-import { Plugin, PluginKey, TextSelection } from '@milkdown/kit/prose/state'
+import { PluginKey, TextSelection } from '@milkdown/kit/prose/state'
 import type { EditorView } from '@milkdown/kit/prose/view'
-import { Decoration, DecorationSet } from '@milkdown/kit/prose/view'
 import { $prose, addTimer } from '@milkdown/kit/utils'
 
 import type { Span } from './typed-syntax'
 import { convertOnLeave, plainText, wordChar } from './typed-syntax'
 
 const key = new PluginKey<Span | null>('backtickPairs')
-const linkTailsKey = new PluginKey<DecorationSet>('codeLinkTails')
 
 /** Registers inline code as the last mark so it renders innermost: a Markdown code span can't hold other inline content, and an outer code mark splits a link around it into separate anchors. */
 export const innermostInlineCode = addTimer(async (ctx) => {
@@ -23,23 +21,6 @@ export const innermostInlineCode = addTimer(async (ctx) => {
     ...marks.filter(([id]) => id === 'inlineCode'),
   ])
 }, schemaTimerCtx)
-
-/** Wraps the end of a link that contains inline code, so the external link arrow can follow the text inside the code; a flex anchor would turn the code into a taller block. */
-export const codeLinkTails = $prose((ctx) => {
-  const link = linkSchema.type(ctx)
-  const code = inlineCodeSchema.type(ctx)
-
-  return new Plugin<DecorationSet>({
-    key: linkTailsKey,
-    state: {
-      init: (_, { doc }) => decorateLinkTails(doc, link, code),
-      apply: (tr, set) => (tr.docChanged ? decorateLinkTails(tr.doc, link, code) : set),
-    },
-    props: {
-      decorations: state => linkTailsKey.getState(state),
-    },
-  })
-})
 
 /** Types backticks the way Obsidian does: a backtick opens a pair, the closing one is typed over, and a pair edited from the inside becomes inline code once the caret stops touching it. */
 export const backtickPairs = $prose((ctx) => {
@@ -62,26 +43,6 @@ function convertPair(tr: Transaction, pair: Span, code: MarkType) {
     .delete(pair.to - 1, pair.to)
     .delete(pair.from, pair.from + 1)
     .addMark(pair.from, pair.to - 2, code.create())
-}
-
-function decorateLinkTails(doc: Node, link: MarkType, code: MarkType) {
-  const decorations: Decoration[] = []
-
-  doc.descendants((node, pos, parent, index) => {
-    const mark = link.isInSet(node.marks)
-
-    if (!node.isText || !mark || !parent || mark.isInSet(parent.maybeChild(index + 1)?.marks ?? [])) return
-
-    for (let i = index; i >= 0 && mark.isInSet(parent.child(i).marks); i--) {
-      if (code.isInSet(parent.child(i).marks)) {
-        decorations.push(Decoration.inline(pos, pos + node.nodeSize, { class: 'link-tail' }))
-
-        return
-      }
-    }
-  })
-
-  return DecorationSet.create(doc, decorations)
 }
 
 function typeBacktick(view: EditorView, from: number, to: number, code: MarkType) {

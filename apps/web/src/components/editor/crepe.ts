@@ -12,7 +12,7 @@ import { codeBoundary } from './code-boundary'
 import { codeCopyFeedback, linkCopyFeedback } from './copy-feedback'
 import { failedImages } from './failed-images'
 import { createFeatureConfigs, features } from './features'
-import { backtickPairs, codeLinkTails, innermostInlineCode } from './inline-code'
+import { backtickPairs, innermostInlineCode } from './inline-code'
 import { languagePickerKeys } from './language-picker'
 import { linkSyntax } from './link-syntax'
 import { withMarkdownDialect } from './markdown'
@@ -75,7 +75,6 @@ export function createCrepe(
     .use(quoteKeymap)
     .use(innermostInlineCode)
     .use(backtickPairs)
-    .use(codeLinkTails)
     .use(bracketPairs)
     .use(linkSyntax)
     .use(slashMenuHighlight)
