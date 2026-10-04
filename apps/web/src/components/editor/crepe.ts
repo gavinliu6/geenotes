@@ -14,6 +14,7 @@ import { failedImages } from './failed-images'
 import { createFeatureConfigs, features } from './features'
 import { backtickPairs, innermostInlineCode } from './inline-code'
 import { languagePickerKeys } from './language-picker'
+import { linkHoverPreview } from './link-preview'
 import { linkSyntax } from './link-syntax'
 import { withMarkdownDialect } from './markdown'
 import { quoteKeymap } from './quote'
@@ -63,6 +64,7 @@ export function createCrepe(
         },
       }))
     })
+    .config(linkHoverPreview)
     .use(failedImages)
     .use(trailingOnLoad)
     .use(taskListToggle)
