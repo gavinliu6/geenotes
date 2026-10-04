@@ -1,3 +1,7 @@
+export { Check } from './check.tsx'
+export { Copy } from './copy'
+export { Link } from './link.tsx'
 export { Logo } from './logo.tsx'
 export { Markdown } from './markdown.tsx'
+export { Trash } from './trash.tsx'
 export type { IconProps } from './types'
