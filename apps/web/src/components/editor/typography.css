@@ -52,7 +52,7 @@
 
     /* ------------------------------- links -------------------------------- */
     & a {
-      @apply text-fg-accent underline decoration-border-accent underline-offset-[3px];
+      @apply text-fg-accent underline decoration-border-accent;
     }
 
     /* ------------------------------- lists -------------------------------- */
