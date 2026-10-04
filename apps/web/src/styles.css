@@ -631,12 +631,12 @@
       duration-enter ease-enter;
   }
 
-  & > .lucide-check {
+  & > svg:last-child {
     @apply text-fg-success;
   }
 
-  &:not([data-copied], [data-copied] *) > .lucide-check,
-  &:is([data-copied], [data-copied] *) > .lucide-copy {
+  &:not([data-copied], [data-copied] *) > svg:last-child,
+  &:is([data-copied], [data-copied] *) > svg:first-child {
     @apply opacity-0 blur-[2px] motion-safe:scale-50;
   }
 }
