@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { COPIED_DURATION } from '@/components/editor/copy-feedback'
-import { Check, Copy, Share } from '@/components/icons'
+import { Check, Copy, Share, ShareFilled } from '@/components/icons'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Description, Label } from '@/components/ui/field'
@@ -11,7 +11,6 @@ import { Switch, SwitchControl } from '@/components/ui/switch'
 import { TextField } from '@/components/ui/text-field'
 import { toastManager } from '@/components/ui/toast'
 import { useUpdateNoteShare } from '@/data/notes/share.mutation'
-import { cn } from '@/lib/utils'
 import type { Note } from '@/utils/schemas'
 
 interface ShareNoteButtonProps {
@@ -24,7 +23,9 @@ export function ShareNoteButton({ note }: ShareNoteButtonProps) {
   return (
     <Dialog>
       <Button variant={isShared ? 'primary' : 'outline'} size="sm">
-        <Share className={cn(!isShared && 'text-fg-muted')} />
+        {isShared
+          ? <ShareFilled className="-mt-0.5" />
+          : <Share className="-mt-0.5 text-fg-muted" />}
         Share
       </Button>
       <Popover placement="bottom end" className="w-80">

@@ -12,7 +12,7 @@ interface LinkPreview extends PluginView {
   hide: () => void
 }
 
-/** Previews the whole hovered link whether or not the editor has focus; Milkdown's preview needs focus and covers only the hovered text node, so editing or removing a partly bold link from it splits the link. */
+/** Previews the whole hovered link whether or not the editor has focus; Milkdown's preview needs focus and covers only the hovered text node, so editing or removing a partly bold link from it splits the link. Read-only links don't navigate on click either, so links always open from the preview. */
 export function linkHoverPreview(ctx: Ctx) {
   ctx.update(linkPreviewTooltip.key, (spec) => {
     const createView = spec.view
@@ -45,6 +45,11 @@ export function linkHoverPreview(ctx: Ctx) {
           mousemove: (view, { target }) => {
             clearTimeout(timer)
             timer = setTimeout(() => update(view, target), 50)
+          },
+          click: (view, event) => {
+            if (!view.editable && event.target instanceof Element && event.target.closest('a')) event.preventDefault()
+
+            return false
           },
         },
       },

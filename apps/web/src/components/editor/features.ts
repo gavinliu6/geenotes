@@ -10,6 +10,8 @@ import * as icons from 'lucide-static'
 
 import { alertIcons, alertLabels, alertTypes, wrapInAlertCommand } from './alert'
 import { codeTheme } from './code-theme'
+import { checkIcon, copyIcon, enterIcon, pencilIcon, trashIcon } from './icon-markup'
+import { readOnlyCodeBlock } from './read-only'
 import {
   subscriptKeymap,
   subscriptSchema,
@@ -68,10 +70,10 @@ export function createFeatureConfigs({
       },
     },
     [CrepeFeature.LinkTooltip]: {
-      linkIcon: icons.Copy + icons.Check,
-      editButton: icons.Pencil,
-      removeButton: icons.Trash2,
-      confirmButton: icons.CornerDownLeft,
+      linkIcon: copyIcon + checkIcon,
+      editButton: pencilIcon,
+      removeButton: trashIcon,
+      confirmButton: enterIcon,
       inputPlaceholder: 'Paste link…',
       onCopyLink,
     },
@@ -137,10 +139,11 @@ export function createFeatureConfigs({
     },
     [CrepeFeature.CodeMirror]: {
       theme: codeTheme,
+      extensions: [readOnlyCodeBlock],
       expandIcon: icons.ChevronDown,
       searchIcon: icons.Search,
       clearSearchIcon: icons.X,
-      copyIcon: icons.Copy + icons.Check,
+      copyIcon: copyIcon + checkIcon,
       onCopy: onCopyCode,
       previewToggleIcon: previewOnly => (previewOnly ? icons.EyeOff : icons.Eye),
     },

@@ -7,7 +7,8 @@ export const taskListToggle = $prose(() =>
     props: {
       handleClickOn: (view, _, node, nodePos, event, direct) => {
         if (
-          !direct
+          !view.editable
+          || !direct
           || node.type.name !== 'list_item'
           || typeof node.attrs.checked !== 'boolean'
         ) {

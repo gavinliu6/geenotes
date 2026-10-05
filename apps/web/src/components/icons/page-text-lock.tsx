@@ -2,7 +2,7 @@ import { cn } from '#/lib/utils'
 
 import type { IconProps } from './types'
 
-export function Trash({
+export function PageTextLock({
   size = 24,
   color = 'currentColor',
   className,
@@ -17,39 +17,34 @@ export function Trash({
       className={cn('inline-block', className)}
     >
       <path
-        d="M5 6.5L5.93578 20.0688C5.97194 20.5931 6.40783 21 6.93341 21H17.0666C17.5922 21 18.0281 20.5931 18.0642 20.0688L19 6.5"
+        d="M14 18C14 17.4477 14.4477 17 15 17H19C19.5523 17 20 17.4477 20 18V20C20 20.5523 19.5523 21 19 21H15C14.4477 21 14 20.5523 14 20V18Z"
         stroke={color}
         strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M10 11V16"
+        d="M15 16C15 14.8954 15.8954 14 17 14C18.1046 14 19 14.8954 19 16C19 16.5523 18.5523 17 18 17H16C15.4477 17 15 16.5523 15 16Z"
         stroke={color}
         strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M14 11V16"
+        d="M10 21H6C5.44771 21 5 20.5523 5 20V4C5 3.44772 5.44772 3 6 3H18C18.5523 3 19 3.44772 19 4V10"
         stroke={color}
         strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M3.5 6H20.5"
+        d="M9 7H15"
         stroke={color}
         strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M8.07092 5.74621C8.42348 3.89745 10.0485 2.5 12 2.5C13.9515 2.5 15.5765 3.89745 15.9291 5.74621"
+        d="M9 11H12"
         stroke={color}
         strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   )

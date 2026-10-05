@@ -1,45 +1,51 @@
-import { ChevronDownIcon, FoldHorizontalIcon, UnfoldHorizontalIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
-
-import { COPIED_DURATION } from '@/components/editor/copy-feedback'
-import { Check, Copy, Markdown, Trash } from '@/components/icons'
+import {
+  Copy,
+  Ellipsis,
+  Link,
+  Markdown,
+  PageTextEdit,
+  PageTextLock,
+  Trash
+} from '@/components/icons'
 import { NoteListDrawer } from '@/components/note-list-drawer'
 import { ShareNoteButton } from '@/components/share-note-button'
 import { Button } from '@/components/ui/button'
-import { Group } from '@/components/ui/group'
-import { Menu, MenuContent, MenuItem, MenuItemLabel } from '@/components/ui/menu'
+import {
+  Menu,
+  MenuContent,
+  MenuItem,
+  MenuItemLabel,
+  MenuSection
+} from '@/components/ui/menu'
 import { Popover } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
+import { switchStyles } from '@/components/ui/switch'
 import { toastManager } from '@/components/ui/toast'
-import { Tooltip, TooltipContent } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { toNoteMarkdown } from '@/utils/notes'
 import type { Note } from '@/utils/schemas'
 
+const { indicator, thumb } = switchStyles()
+
 interface NoteToolbarProps {
   className?: string
   note: Pick<Note, 'id' | 'title' | 'markdown' | 'sharedAt'>
-  isFullWidth: boolean
-  onFullWidthChange: (isFullWidth: boolean) => void
+  isLocked: boolean
+  onLockedChange: (isLocked: boolean) => void
   onDelete: () => void
 }
 
 export function NoteToolbar({
   className,
   note,
-  isFullWidth,
-  onFullWidthChange,
+  isLocked,
+  onLockedChange,
   onDelete,
 }: NoteToolbarProps) {
-  const widthToggleLabel = isFullWidth ? 'Constrain width' : 'Expand width'
-
   return (
     <div
       className={cn(
-        `
-          flex h-12 shrink-0 items-center justify-between pr-4 pl-6
-          [@container_(width<=42rem)]:pr-6
-        `,
+        'flex h-12 shrink-0 items-center justify-between px-6',
         className
       )}
     >
@@ -47,57 +53,47 @@ export function NoteToolbar({
         <NoteListDrawer />
       </div>
       <div className="ml-auto flex items-center gap-2">
-        <PageActions note={note} onDelete={onDelete} />
         <ShareNoteButton note={note} />
-        <Tooltip>
-          <Button
-            variant="quiet"
-            size="sm"
-            isIconOnly
-            aria-label={widthToggleLabel}
-            className="
-              text-fg-muted
-              [@container_(width<=42rem)]:hidden
-            "
-            onPress={() => onFullWidthChange(!isFullWidth)}
-          >
-            {isFullWidth
-              ? <FoldHorizontalIcon className="size-4" />
-              : <UnfoldHorizontalIcon className="size-4" />}
-          </Button>
-          <TooltipContent
-            hideArrow
-            placement="bottom"
-          >{widthToggleLabel}
-          </TooltipContent>
-        </Tooltip>
+        <NoteActions
+          note={note}
+          isLocked={isLocked}
+          onLockedChange={onLockedChange}
+          onDelete={onDelete}
+        />
       </div>
     </div>
   )
 }
 
-function PageActions({
+function NoteActions({
   note,
+  isLocked,
+  onLockedChange,
   onDelete,
-}: Pick<NoteToolbarProps, 'note' | 'onDelete'>) {
-  const [copiedAt, setCopiedAt] = useState<number>()
-  const isCopied = copiedAt !== undefined
-
-  useEffect(() => {
-    if (copiedAt === undefined) return
-
-    const timeout = setTimeout(() => setCopiedAt(undefined), COPIED_DURATION)
-
-    return () => clearTimeout(timeout)
-  }, [copiedAt])
-
-  const copyPage = async () => {
+}: Omit<NoteToolbarProps, 'className'>) {
+  const copy = async (text: string, copied: string, failed: string) => {
     try {
-      await navigator.clipboard.writeText(toNoteMarkdown(note))
-      setCopiedAt(Date.now())
+      await navigator.clipboard.writeText(text)
+      toastManager.add({ type: 'success', description: copied })
     } catch {
-      toastManager.add({ type: 'error', description: 'Failed to copy page' })
+      toastManager.add({ type: 'error', description: failed })
     }
+  }
+
+  const copyLink = () => {
+    void copy(
+      `${window.location.origin}/notes/${note.id}`,
+      'Link copied',
+      'Failed to copy link'
+    )
+  }
+
+  const copyContents = () => {
+    void copy(
+      toNoteMarkdown(note),
+      'Page contents copied',
+      'Failed to copy page contents'
+    )
   }
 
   const confirmDelete = () => {
@@ -105,36 +101,76 @@ function PageActions({
   }
 
   return (
-    <Group aria-label="Page actions">
-      <Button variant="outline" size="sm" onPress={copyPage}>
-        <span className="copy-feedback" data-copied={isCopied || undefined}>
-          <Copy className="text-fg-muted" />
-          <Check />
-        </span>
-        Copy page
+    <Menu>
+      <Button
+        variant="quiet"
+        size="sm"
+        isIconOnly
+        aria-label="More actions"
+        className="text-fg-muted"
+      >
+        <Ellipsis />
       </Button>
-      <Menu>
-        <Button variant="outline" size="sm" isIconOnly aria-label="More page actions">
-          <ChevronDownIcon className="text-fg-muted" />
-        </Button>
-        <Popover placement="bottom end">
-          <MenuContent>
+      <Popover placement="bottom end">
+        <MenuContent>
+          <MenuItem textValue="Copy link" onAction={copyLink}>
+            <Link />
+            <MenuItemLabel>Copy link</MenuItemLabel>
+          </MenuItem>
+          <MenuItem textValue="Copy page contents" onAction={copyContents}>
+            <Copy />
+            <MenuItemLabel>Copy page contents</MenuItemLabel>
+          </MenuItem>
+          <MenuItem
+            href={`/notes/${note.id}.md`}
+            target="_blank"
+            textValue="View as Markdown"
+          >
+            <Markdown />
+            <MenuItemLabel>View as Markdown</MenuItemLabel>
+          </MenuItem>
+          <Separator />
+          <MenuSection
+            selectionMode="multiple"
+            selectedKeys={isLocked ? ['read-only'] : []}
+          >
             <MenuItem
-              href={`/notes/${note.id}.md`}
-              target="_blank"
-              textValue="View as Markdown"
+              id="read-only"
+              textValue="Read-only"
+              className="
+                *:data-menu-item-indicator:hidden
+                data-selection-mode:pr-1.5
+              "
+              onAction={() => onLockedChange(!isLocked)}
             >
-              <Markdown />
-              <MenuItemLabel>View as Markdown</MenuItemLabel>
+              {isLocked ? <PageTextLock /> : <PageTextEdit />}
+              <MenuItemLabel>Read-only</MenuItemLabel>
+              <span
+                aria-hidden
+                data-selected={isLocked || undefined}
+                className={indicator({
+                  size: 'sm',
+                  className: `
+                    ml-auto
+                    in-data-focus-visible:not-data-selected:bg-neutral-active
+                    in-data-hovered:not-data-selected:bg-neutral-active
+                  `,
+                })}
+              >
+                <span
+                  data-selected={isLocked || undefined}
+                  className={thumb({ size: 'sm' })}
+                />
+              </span>
             </MenuItem>
-            <Separator />
-            <MenuItem variant="danger" textValue="Delete" onAction={confirmDelete}>
-              <Trash />
-              <MenuItemLabel>Delete</MenuItemLabel>
-            </MenuItem>
-          </MenuContent>
-        </Popover>
-      </Menu>
-    </Group>
+          </MenuSection>
+          <Separator />
+          <MenuItem variant="danger" textValue="Delete" onAction={confirmDelete}>
+            <Trash />
+            <MenuItemLabel>Delete</MenuItemLabel>
+          </MenuItem>
+        </MenuContent>
+      </Popover>
+    </Menu>
   )
 }

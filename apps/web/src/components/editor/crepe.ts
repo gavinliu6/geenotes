@@ -8,7 +8,6 @@ import { uploadImage } from '@/utils/uploads.functions'
 import { alertCommands } from './alert'
 import { bracketPairs } from './bracket-pairs'
 import { changeListener } from './change-listener'
-import { codeBoundary } from './code-boundary'
 import { codeCopyFeedback, linkCopyFeedback } from './copy-feedback'
 import { failedImages } from './failed-images'
 import { createFeatureConfigs, features } from './features'
@@ -16,8 +15,10 @@ import { backtickPairs, innermostInlineCode } from './inline-code'
 import { languagePickerKeys } from './language-picker'
 import { linkHoverPreview } from './link-preview'
 import { linkSyntax } from './link-syntax'
+import { markBoundary } from './mark-boundary'
 import { withMarkdownDialect } from './markdown'
 import { quoteKeymap } from './quote'
+import { readOnlyNodeViews } from './read-only'
 import { slashMenuHighlight } from './slash-menu'
 import { startBoundary } from './start-boundary'
 import { supSubCommands } from './sup-sub'
@@ -67,8 +68,9 @@ export function createCrepe(
     .config(linkHoverPreview)
     .use(failedImages)
     .use(trailingOnLoad)
+    .use(readOnlyNodeViews)
     .use(taskListToggle)
-    .use(codeBoundary)
+    .use(markBoundary)
     .use(startBoundary(onExitStart))
     .use(codeCopy.plugin)
     .use(languagePickerKeys)

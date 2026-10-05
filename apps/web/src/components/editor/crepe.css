@@ -213,17 +213,19 @@
 
     & .milkdown-link-preview > .link-preview,
     & .milkdown-link-edit > .link-edit {
-      @apply h-8 items-center gap-0.5 p-1;
+      @apply h-8 items-center p-1;
     }
 
     & .link-preview {
+      @apply gap-0;
+
       & > .link-icon,
       & > .button {
         @apply size-6 rounded-md p-1 text-fg-muted
           hover:bg-highlight hover:text-fg-on-highlight;
 
         & svg {
-          @apply text-current;
+          @apply size-4 fill-none text-current;
         }
       }
 
@@ -232,24 +234,31 @@
       }
 
       & > .link-display {
-        @apply w-auto max-w-64 truncate px-1.5 text-sm/6 text-fg-muted
+        @apply order-first w-auto max-w-64 truncate px-1 text-sm/6 text-fg-muted
           hover:text-fg;
       }
     }
 
+    &:has(> .ProseMirror[contenteditable='false'])
+      .link-preview
+      > :is(.link-edit-button, .link-remove-button) {
+      @apply hidden;
+    }
+
     & .link-edit {
-      @apply pl-2;
+      @apply gap-0;
 
       & > .input-area {
-        @apply w-64 text-sm text-fg placeholder:text-fg-placeholder;
+        @apply field-sizing-content w-auto min-w-24 max-w-[min(28rem,100vw_-_6rem)] px-1
+          text-sm text-fg placeholder:text-fg-placeholder;
       }
 
       & > .button {
-        @apply h-6 rounded-md px-1.5 text-fg-muted
+        @apply size-6 rounded-md p-1 text-fg-muted
           hover:bg-highlight hover:text-fg-on-highlight;
 
         & svg {
-          @apply text-current;
+          @apply size-4 fill-none text-current;
         }
       }
     }
@@ -421,7 +430,7 @@
           }
 
           & svg {
-            @apply size-3.5 text-current;
+            @apply size-3.5 fill-none text-current;
           }
         }
 

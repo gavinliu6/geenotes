@@ -86,7 +86,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <ThemeProvider defaultTheme="system" storageKey="theme">
           {children}
-          <Toaster position="top-center" />
+          <Toaster />
         </ThemeProvider>
         <TanStackDevtools
           config={{

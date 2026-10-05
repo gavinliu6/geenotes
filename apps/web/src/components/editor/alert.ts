@@ -205,18 +205,24 @@ const alertView = $view(alertSchema.node, (): NodeViewConstructor => (initialNod
   contentDOM.className = 'markdown-alert-content'
   dom.replaceChildren(title, contentDOM)
 
-  const renderType = view.editable
-    ? renderTypeSelect(title, (alertType) => {
-        const pos = getPos()
+  const changeType = (alertType: AlertType) => {
+    const pos = getPos()
 
-        if (pos === undefined) return
+    if (pos === undefined) return
 
-        view.dispatch(view.state.tr.setNodeAttribute(pos, 'alertType', alertType))
-        requestAnimationFrame(() => view.focus())
-      })
-    : renderTypeLabel(title)
+    view.dispatch(view.state.tr.setNodeAttribute(pos, 'alertType', alertType))
+    requestAnimationFrame(() => view.focus())
+  }
+
+  let editable: boolean | undefined
+  let renderType: (alertType: AlertType) => void
 
   const render = () => {
+    if (view.editable !== editable) {
+      editable = view.editable
+      renderType = editable ? renderTypeSelect(title, changeType) : renderTypeLabel(title)
+    }
+
     dom.dataset.alertType = node.attrs.alertType
     renderType(node.attrs.alertType as AlertType)
   }

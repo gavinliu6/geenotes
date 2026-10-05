@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { isNotFound, useHydrated } from '@tanstack/react-router'
 import type * as React from 'react'
-import { useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useImperativeHandle, useRef, useState } from 'react'
 
 import { Loader } from '@/components/ui/loader'
 import { toastManager } from '@/components/ui/toast'
@@ -9,6 +9,7 @@ import { applyNoteChanges, useSaveNote } from '@/data/notes/notes.mutation'
 import type { Note } from '@/utils/schemas'
 import { NOTE_TITLE_MAX_LENGTH } from '@/utils/schemas'
 
+import { useEditLock } from './edit-lock'
 import type { MarkdownEditorHandle } from './markdown-editor'
 import { MarkdownEditor } from './markdown-editor'
 import { createSaveQueue } from './save-queue'
@@ -19,15 +20,18 @@ type EditableNote = Pick<Note, 'id' | 'title' | 'markdown'>
 export interface NoteEditorHandle {
   /** Saves pending edits and resolves once every save has settled. */
   flush: () => Promise<void>
+  setLocked: (isLocked: boolean) => void
 }
 
 interface NoteEditorProps {
   ref?: React.Ref<NoteEditorHandle>
   note: EditableNote
+  titleActions?: React.ReactNode
+  onLockedChange?: (isLocked: boolean) => void
 }
 
 /** Mount with `key={note.id}`: the note is only read on mount. */
-export function NoteEditor({ ref, note }: NoteEditorProps) {
+export function NoteEditor({ ref, note, titleActions, onLockedChange }: NoteEditorProps) {
   const autosave = useAutosave(note)
   const [draft] = useState(() => autosave.getDraft())
   const [title, setTitle] = useState(draft.title)
@@ -35,18 +39,39 @@ export function NoteEditor({ ref, note }: NoteEditorProps) {
   const [isNew] = useState(!draft.title && !draft.markdown)
   const isHydrated = useHydrated()
   const [isLoading, setIsLoading] = useState(!isHydrated)
+  const rootRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const bodyRef = useRef<MarkdownEditorHandle>(null)
+  const { isLocked, setLocked, markInput } = useEditLock({
+    containerRef: rootRef,
+    initiallyLocked: !isNew,
+    onUnlock: () => {
+      if (document.activeElement !== titleRef.current) bodyRef.current?.focus()
+    },
+  })
+  const reportLocked = useEffectEvent((locked: boolean) => {
+    onLockedChange?.(locked)
+  })
 
-  useImperativeHandle(ref, () => ({ flush: autosave.flush }), [autosave])
+  useImperativeHandle(ref, () => ({ flush: autosave.flush, setLocked }), [autosave, setLocked])
+
+  useEffect(() => {
+    reportLocked(isLocked)
+  }, [isLocked])
 
   useEffect(() => {
     if (isNew && !isLoading) titleRef.current?.focus()
   }, [isNew, isLoading])
 
   const changeTitle = (value: string) => {
+    markInput()
     setTitle(value)
     autosave.setTitle(value)
+  }
+
+  const changeMarkdown = (serialize: () => string) => {
+    markInput()
+    autosave.setMarkdown(serialize)
   }
 
   const focusTitleEnd = () => {
@@ -59,7 +84,7 @@ export function NoteEditor({ ref, note }: NoteEditorProps) {
   }
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.nativeEvent.isComposing || event.keyCode === 229) return
+    if (isLocked || event.nativeEvent.isComposing || event.keyCode === 229) return
     if (event.altKey || event.ctrlKey || event.metaKey) return
 
     const { value, selectionStart, selectionEnd } = event.currentTarget
@@ -90,6 +115,8 @@ export function NoteEditor({ ref, note }: NoteEditorProps) {
   }
 
   const handlePaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (isLocked) return
+
     const text = event.clipboardData.getData('text/plain')
     const [firstLine = '', ...lines] = text.split(/\r?\n/)
     const rest = lines.join('\n').trim()
@@ -114,34 +141,38 @@ export function NoteEditor({ ref, note }: NoteEditorProps) {
   }
 
   return (
-    <div className="flex grow flex-col">
+    <div ref={rootRef} className="flex grow flex-col">
       <div className={isLoading ? 'invisible h-0' : 'flex grow flex-col'}>
-        <div
-          data-value={title}
-          className="
-            grid border-b pb-3 text-[2rem]/10 tracking-tight
-            after:invisible after:col-start-1 after:row-start-1
-            after:wrap-break-word after:whitespace-pre-wrap
-            after:content-[attr(data-value)_'_']
-          "
-        >
-          <textarea
-            ref={titleRef}
-            rows={1}
-            value={title}
-            maxLength={NOTE_TITLE_MAX_LENGTH}
-            aria-label="Title"
-            placeholder="Untitled"
+        <div className="flex flex-wrap items-center gap-2 border-b pb-3">
+          <div
+            data-value={title}
             className="
-              col-start-1 row-start-1 resize-none overflow-hidden bg-transparent
-              wrap-break-word outline-none
-              placeholder:text-fg-muted
+              grid min-w-0 grow text-[2rem]/10 tracking-tight
+              after:invisible after:col-start-1 after:row-start-1
+              after:wrap-break-word after:whitespace-pre-wrap
+              after:content-[attr(data-value)_'_']
             "
-            onChange={event =>
-              changeTitle(event.target.value.replace(/[\r\n]+/g, ' '))}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-          />
+          >
+            <textarea
+              ref={titleRef}
+              rows={1}
+              value={title}
+              readOnly={isLocked}
+              maxLength={NOTE_TITLE_MAX_LENGTH}
+              aria-label="Title"
+              placeholder="Untitled"
+              className="
+                col-start-1 row-start-1 resize-none overflow-hidden
+                bg-transparent wrap-break-word outline-none
+                placeholder:text-fg-muted
+              "
+              onChange={event =>
+                changeTitle(event.target.value.replace(/[\r\n]+/g, ' '))}
+              onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
+            />
+          </div>
+          {titleActions}
         </div>
         <MarkdownEditor
           ref={bodyRef}
@@ -149,7 +180,8 @@ export function NoteEditor({ ref, note }: NoteEditorProps) {
           placeholder="Press `/` for commands"
           aria-label="Note"
           className="mt-4 grow"
-          onChange={autosave.setMarkdown}
+          readOnly={isLocked}
+          onChange={changeMarkdown}
           onExitStart={focusTitleEnd}
           onReady={() => setIsLoading(false)}
         />

@@ -257,4 +257,10 @@ export type {
   SwitchProps,
   SwitchThumbProps
 }
-export { Switch, SwitchControl, SwitchIndicator, SwitchThumb }
+export {
+  Switch,
+  SwitchControl,
+  SwitchIndicator,
+  switchVariants as switchStyles,
+  SwitchThumb
+}

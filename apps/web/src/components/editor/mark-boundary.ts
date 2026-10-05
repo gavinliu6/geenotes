@@ -1,5 +1,5 @@
 import { inlineCodeSchema, linkSchema } from '@milkdown/kit/preset/commonmark'
-import type { ResolvedPos } from '@milkdown/kit/prose/model'
+import type { Node, ResolvedPos } from '@milkdown/kit/prose/model'
 import { Mark } from '@milkdown/kit/prose/model'
 import type { EditorState } from '@milkdown/kit/prose/state'
 import { Plugin, PluginKey, TextSelection } from '@milkdown/kit/prose/state'
@@ -9,52 +9,80 @@ import { $prose } from '@milkdown/kit/utils'
 
 interface Edge {
   pos: number
-  /** Whether the code ends here rather than starts. */
+  /** The inline code or link that starts or ends here. */
+  mark: Mark
+  /** Whether the mark ends here rather than starts. */
   end: boolean
+  /** Whether the caret can also stop on the mark's side of the edge. */
+  enterable: boolean
   inside: readonly Mark[]
   outside: readonly Mark[]
 }
 
-const key = new PluginKey('codeBoundary')
+const key = new PluginKey('markBoundary')
 const segmenter = new Intl.Segmenter()
 
 /** Milkdown makes inline code non-inclusive, so being inside its end takes stored marks, and ProseMirror then restarts an IME composition in a wrapper that merges into the code text and breaks it. */
 const inclusiveInlineCode = inlineCodeSchema.extendSchema(prev => ctx => ({ ...prev(ctx), inclusive: true }))
 
-/** Gives each edge of inline code a caret stop inside and one outside the code, which the arrow keys step through, so the caret can leave code that ends a paragraph without leaving the paragraph. */
-const codeEdges = $prose((ctx) => {
+/** Gives each edge of inline code, and the end of each link, a caret stop inside the mark and one outside it, which the arrow keys step through. The caret can leave code or a link that ends a paragraph without leaving the paragraph, and text typed after a link stays out of it. */
+const markEdges = $prose((ctx) => {
   const code = inlineCodeSchema.type(ctx)
   const link = linkSchema.type(ctx)
   let editor: EditorView | null = null
   let pointerX: number | null = null
+
+  const codeEdgeAt = ($pos: ResolvedPos, before: Node | null, after: Node | null): Edge | null => {
+    const codeBefore = !!before && !!code.isInSet(before.marks)
+    const codeAfter = !!after && !!code.isInSet(after.marks)
+    const inner = codeBefore ? before : after
+    const mark = inner && code.isInSet(inner.marks)
+
+    if (codeBefore === codeAfter || !inner || !mark) return null
+
+    const outer = codeBefore ? after : before
+
+    return {
+      pos: $pos.pos,
+      mark,
+      end: codeBefore,
+      enterable: true,
+      inside: inner.marks,
+      outside: $pos.marks().filter(other =>
+        other.type !== code && (other.type !== link || other.isInSet(outer?.marks ?? []))),
+    }
+  }
+
+  /** A link's start only needs a stop when the link opens its paragraph, where the caret would otherwise inherit the link; after text it doesn't. */
+  const linkEdgeAt = ($pos: ResolvedPos, before: Node | null, after: Node | null): Edge | null => {
+    const outside = $pos.marks().filter(other => other.type !== link)
+
+    if (before) {
+      const mark = link.isInSet(before.marks)
+
+      return mark && !mark.isInSet(after?.marks ?? [])
+        ? { pos: $pos.pos, mark, end: true, enterable: true, inside: before.marks, outside }
+        : null
+    }
+
+    const mark = after && link.isInSet(after.marks)
+
+    return mark ? { pos: $pos.pos, mark, end: false, enterable: false, inside: after.marks, outside } : null
+  }
 
   const edgeAt = ($pos: ResolvedPos): Edge | null => {
     const { parent, nodeBefore: before, nodeAfter: after } = $pos
 
     if (!parent.isTextblock || parent.type.spec.code || $pos.textOffset) return null
 
-    const codeBefore = !!before && !!code.isInSet(before.marks)
-    const codeAfter = !!after && !!code.isInSet(after.marks)
-    const inner = codeBefore ? before : after
-
-    if (codeBefore === codeAfter || !inner) return null
-
-    const outer = codeBefore ? after : before
-
-    return {
-      pos: $pos.pos,
-      end: codeBefore,
-      inside: inner.marks,
-      outside: $pos.marks().filter(mark =>
-        mark.type !== code && (mark.type !== link || mark.isInSet(outer?.marks ?? []))),
-    }
+    return codeEdgeAt($pos, before, after) ?? linkEdgeAt($pos, before, after)
   }
 
   const edgeOf = ({ selection }: EditorState) =>
     selection instanceof TextSelection && selection.empty ? edgeAt(selection.$head) : null
 
-  const isInside = (state: EditorState) =>
-    !!code.isInSet(state.storedMarks ?? state.selection.$head.marks())
+  const isInside = ({ storedMarks, selection }: EditorState, edge: Edge) =>
+    !!edge.mark.isInSet(storedMarks ?? selection.$head.marks())
 
   /** Stored marks only where they differ from the position's own marks, plus inside a code start, where the composition has to restart inside the code. */
   const storedFor = ($pos: ResolvedPos, edge: Edge, inside: boolean) => {
@@ -82,6 +110,10 @@ const codeEdges = $prose((ctx) => {
     return state.tr.setStoredMarks(stored).setMeta(key, true)
   }
 
+  /** Clicks on code glyphs land inside the code; clicks at a link's end land outside the link. */
+  const clickedInside = (edge: Edge) =>
+    edge.mark.type === code && !!editor && pointerX !== null && insideAt(editor, edge, pointerX)
+
   return new Plugin({
     key,
     appendTransaction: (transactions, oldState, state) => {
@@ -91,17 +123,16 @@ const codeEdges = $prose((ctx) => {
       const edited = transactions.some(tr => tr.docChanged)
 
       if (!edge) return edited ? withoutDeletedMarks(state) : null
+      if (!edge.enterable) return isInside(state, edge) ? withSide(state, edge, false) : null
       if (edited) {
         // Range edits inherit transaction marks; their head depends on selection direction.
         return oldState.selection instanceof TextSelection && oldState.selection.empty
-          ? withSide(state, edge, isInside(oldState))
+          ? withSide(state, edge, isInside(oldState, edge))
           : null
       }
       if (!transactions.some(tr => tr.selectionSet)) return null
 
-      const clicked = transactions.some(tr => tr.getMeta('pointer'))
-
-      return withSide(state, edge, clicked && !!editor && pointerX !== null && insideAt(editor, edge, pointerX))
+      return withSide(state, edge, transactions.some(tr => tr.getMeta('pointer')) && clickedInside(edge))
     },
     props: {
       handleKeyDown: (view, event) => {
@@ -114,14 +145,17 @@ const codeEdges = $prose((ctx) => {
         if (!(selection instanceof TextSelection) || !selection.empty) return false
 
         const edge = edgeAt(selection.$head)
-        const inside = isInside(state)
 
-        if (edge && inside === (edge.end === forward)) {
-          const tr = withSide(state, edge, !inside)
+        if (edge?.enterable) {
+          const inside = isInside(state, edge)
 
-          if (tr) view.dispatch(tr)
+          if (inside === (edge.end === forward)) {
+            const tr = withSide(state, edge, !inside)
 
-          return true
+            if (tr) view.dispatch(tr)
+
+            return true
+          }
         }
 
         const crossed = forward ? selection.$head.nodeAfter : selection.$head.nodeBefore
@@ -137,7 +171,7 @@ const codeEdges = $prose((ctx) => {
         view.dispatch(
           state.tr
             .setSelection(TextSelection.create(state.doc, $target.pos))
-            .setStoredMarks(storedFor($target, arrival, !!code.isInSet(crossed.marks)))
+            .setStoredMarks(storedFor($target, arrival, arrival.enterable && !!arrival.mark.isInSet(crossed.marks)))
             .setMeta(key, true)
             .scrollIntoView()
         )
@@ -146,17 +180,22 @@ const codeEdges = $prose((ctx) => {
       },
       decorations: (state) => {
         const edge = edgeOf(state)
-        const inside = isInside(state)
+        const inside = !!edge && isInside(state, edge)
 
         if (!edge || (edge.end && inside)) return null
 
         const side = edge.end || inside ? -1 : 1
+        const { nodeBefore, nodeAfter } = state.selection.$head
+        // Chrome draws no caret after the last child of a mark's element, so the anchor only joins marks that continue past the caret.
+        const marks = edge.outside.filter(mark => mark.isInSet(nodeAfter?.marks ?? []))
+        // Next to text, an empty anchor is enough, and a character in it would break the autospace between the characters around it.
+        const text = (edge.end ? nodeAfter : nodeBefore)?.isText ? '' : '\u2060'
 
         return DecorationSet.create(state.doc, [
-          Decoration.widget(edge.pos, () => document.createTextNode('\u2060'), {
+          Decoration.widget(edge.pos, () => document.createTextNode(text), {
             side,
-            marks: edge.outside,
-            key: `code-edge${side}`,
+            marks,
+            key: `mark-edge${side}${text ? '' : '-empty'}`,
           }),
         ])
       },
@@ -174,7 +213,7 @@ const codeEdges = $prose((ctx) => {
 
           if (!edge || pointerX === null || view.isDestroyed) return
 
-          const tr = withSide(view.state, edge, insideAt(view, edge, pointerX))
+          const tr = withSide(view.state, edge, clickedInside(edge))
 
           if (tr) view.dispatch(tr)
           else syncCaret(view, edge)
@@ -225,4 +264,4 @@ function syncCaret(view: EditorView, edge: Edge) {
   }
 }
 
-export const codeBoundary = [inclusiveInlineCode, codeEdges].flat()
+export const markBoundary = [inclusiveInlineCode, markEdges].flat()

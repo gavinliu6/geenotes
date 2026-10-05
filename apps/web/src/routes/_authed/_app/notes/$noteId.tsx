@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { NoteEditorHandle } from '@/components/editor/note-editor'
 import { NoteEditor } from '@/components/editor/note-editor'
 import { NoteToolbar } from '@/components/note-toolbar'
+import { NoteWidthToggle } from '@/components/note-width-toggle'
 import {
   Empty,
   EmptyDescription,
@@ -46,6 +47,7 @@ function NotePage() {
   const { data: note } = useSuspenseQuery(noteQueryOptions(noteId))
   const { isFullWidth: initialIsFullWidth } = Route.useLoaderData()
   const [isFullWidth, setIsFullWidth] = useState(initialIsFullWidth)
+  const [isLocked, setIsLocked] = useState(true)
   const editorRef = useRef<NoteEditorHandle>(null)
   const { mutate: recordView } = useRecordNoteView()
   const { mutate: deleteNote } = useDeleteNote()
@@ -68,8 +70,8 @@ function NotePage() {
     <>
       <NoteToolbar
         note={note}
-        isFullWidth={isFullWidth}
-        onFullWidthChange={changeFullWidth}
+        isLocked={isLocked}
+        onLockedChange={locked => editorRef.current?.setLocked(locked)}
         onDelete={() => void handleDelete()}
       />
       <article
@@ -78,7 +80,19 @@ function NotePage() {
           !isFullWidth && 'max-w-2xl'
         )}
       >
-        <NoteEditor key={note.id} ref={editorRef} note={note} />
+        <NoteEditor
+          key={note.id}
+          ref={editorRef}
+          note={note}
+          titleActions={(
+            <NoteWidthToggle
+              className="ml-auto"
+              isFullWidth={isFullWidth}
+              onFullWidthChange={changeFullWidth}
+            />
+          )}
+          onLockedChange={setIsLocked}
+        />
       </article>
     </>
   )
