@@ -10,7 +10,6 @@ import { bracketPairs } from './bracket-pairs'
 import { changeListener } from './change-listener'
 import { codeBoundary } from './code-boundary'
 import { codeCopyFeedback, linkCopyFeedback } from './copy-feedback'
-import { endMark } from './end-mark'
 import { failedImages } from './failed-images'
 import { createFeatureConfigs, features } from './features'
 import { backtickPairs, innermostInlineCode } from './inline-code'
@@ -67,7 +66,6 @@ export function createCrepe(
     })
     .config(linkHoverPreview)
     .use(failedImages)
-    .use(endMark)
     .use(trailingOnLoad)
     .use(taskListToggle)
     .use(codeBoundary)

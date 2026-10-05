@@ -2,7 +2,6 @@ import { Crepe, CrepeFeature } from '@milkdown/crepe'
 import { editorViewOptionsCtx } from '@milkdown/kit/core'
 
 import { codeCopyFeedback } from './copy-feedback'
-import { endMark } from './end-mark'
 import { failedImages } from './failed-images'
 import { createFeatureConfigs, features } from './features'
 import { withMarkdownDialect } from './markdown'
@@ -39,7 +38,6 @@ export function createViewer(root: HTMLElement, markdown: string) {
       }))
     })
     .use(failedImages)
-    .use(endMark)
     .use(codeCopy.plugin)
 
   return crepe

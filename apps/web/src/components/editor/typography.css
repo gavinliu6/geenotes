@@ -249,13 +249,5 @@
     & > :last-child {
       @apply mb-0!;
     }
-
-    /* ------------------------------ end mark ------------------------------ */
-    & .end-mark:not(:has(> .ProseMirror-trailingBreak))::after,
-    & .end-mark:has(> .ProseMirror-trailingBreak:only-child)::before,
-    & .end-mark .ProseMirror-widget:has(+ .ProseMirror-separator)::after {
-      @apply -mr-3 ml-1 inline-block size-2 bg-primary;
-      content: '';
-    }
   }
 }
