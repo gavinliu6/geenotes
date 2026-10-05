@@ -133,6 +133,12 @@ function createFormatters(timeZone: string) {
       day: 'numeric',
       year: 'numeric',
     }),
+    longFullDate: new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    }),
     calendar: new Intl.DateTimeFormat('en-US', {
       timeZone,
       year: 'numeric',
@@ -149,6 +155,11 @@ function toCalendarDay(date: Date | number, format: Intl.DateTimeFormat) {
   const year = get('year')
 
   return { year, index: Date.UTC(year, get('month') - 1, get('day')) / DAY_MS }
+}
+
+/** "October 5, 2026": the absolute date for places with no `now` to be relative to. */
+export function formatNoteDate(date: Date, timeZone: string) {
+  return getFormatters(timeZone).longFullDate.format(date)
 }
 
 export function toNoteMarkdown({ title, markdown }: Pick<Note, 'title' | 'markdown'>) {

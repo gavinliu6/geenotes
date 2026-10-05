@@ -1,0 +1,260 @@
+'use client'
+
+import type * as React from 'react'
+import { createContext, useContext, useId } from 'react'
+import { useSlotId } from 'react-aria/private/utils/useId'
+import { composeRenderProps } from 'react-aria-components/composeRenderProps'
+import { LabelContext } from 'react-aria-components/Label'
+import { Provider, useSlottedContext } from 'react-aria-components/slots'
+import * as SwitchPrimitive from 'react-aria-components/Switch'
+import type { VariantProps } from 'tailwind-variants'
+import { tv } from 'tailwind-variants'
+
+import { Label } from '@/components/ui/field'
+
+const switchVariants = tv({
+  slots: {
+    root: `
+      flex items-center gap-2
+      has-data-description:items-start
+    `,
+    control:
+      `
+        relative flex items-center gap-2 rounded-full focus-reset
+        transition-colors
+        not-has-data-label:after:absolute not-has-data-label:after:-inset-x-3
+        not-has-data-label:after:-inset-y-2
+        read-only:cursor-default
+        focus-visible:focus-ring
+        disabled:cursor-disabled
+        has-data-description:items-start
+        has-data-label:w-full has-data-label:justify-between
+        has-data-label:rounded-lg has-data-label:border has-data-label:p-2.5
+        has-data-label:selected:border-selection/25
+        has-data-label:selected:bg-selection-muted
+      `,
+    indicator:
+      `
+        inline-flex shrink-0 cursor-pointer items-center rounded-full border
+        border-transparent bg-neutral p-0.5
+        transition-[background-color,border-color,box-shadow]
+        read-only:cursor-default
+        disabled:cursor-disabled disabled:border-(--disabled-border,transparent)
+        disabled:bg-(--disabled-unselected-bg,var(--color-neutral))
+        selected:bg-selection
+        disabled:selected:border-transparent
+        disabled:selected:bg-(--disabled-selected-bg,var(--color-selection))
+      `,
+    thumb:
+      `
+        pointer-events-none block rounded-full bg-thumb shadow-sm
+        transition-[background-color,margin,width]
+        disabled:bg-(--disabled-fg,var(--color-thumb))
+        disabled:selected:bg-(--disabled-selected-fg,var(--color-thumb))
+      `,
+  },
+  variants: {
+    size: {
+      sm: {
+        root: 'has-data-description:**:data-label:mt-[calc((1.25rem-1lh)/2)]',
+        indicator: 'h-5 w-9',
+        thumb: `
+          size-4
+          pressed:w-5
+          selected:ml-4
+          selected:pressed:ml-3
+        `,
+      },
+      md: {
+        root: 'has-data-description:**:data-label:mt-[calc((1.5rem-1lh)/2)]',
+        indicator: 'h-6 w-11',
+        thumb: `
+          size-5
+          pressed:w-6
+          selected:ml-5
+          selected:pressed:ml-4
+        `,
+      },
+      lg: {
+        root: 'has-data-description:**:data-label:mt-[calc((1.75rem-1lh)/2)]',
+        indicator: 'h-7 w-13',
+        thumb: `
+          size-6
+          pressed:w-7
+          selected:ml-6
+          selected:pressed:ml-5
+        `,
+      },
+    },
+  },
+  defaultVariants: {
+    size: 'md',
+  },
+})
+
+const { root, control, indicator, thumb } = switchVariants()
+
+const SwitchStyleContext = createContext<VariantProps<typeof switchVariants>>({})
+const InternalSwitchContext = createContext<
+  | (SwitchPrimitive.SwitchButtonRenderProps & VariantProps<typeof switchVariants>)
+  | null
+>(null)
+
+/* -------------------------------------------------------------------------- */
+
+interface SwitchProps
+  extends
+  React.ComponentProps<typeof SwitchPrimitive.SwitchField>,
+  VariantProps<typeof switchVariants> {}
+
+const Switch = ({ id: idProp, size, className, ...props }: SwitchProps) => {
+  const autoId = useId()
+  const id = idProp ?? autoId
+  const labelId = useSlotId()
+
+  return (
+    <SwitchStyleContext value={{ size }}>
+      <SwitchPrimitive.SwitchField
+        data-switch=""
+        id={id}
+        aria-labelledby={labelId}
+        className={composeRenderProps(className, className =>
+          root({ className })
+        )}
+        {...props}
+      >
+        {composeRenderProps(props.children, (children) => {
+          return children
+            ? (
+                <Provider values={[[LabelContext, { htmlFor: id, id: labelId }]]}>
+                  {typeof children === 'string'
+                    ? (
+                        <>
+                          <SwitchControl />
+                          <Label>{children}</Label>
+                        </>
+                      )
+                    : (
+                        children
+                      )}
+                </Provider>
+              )
+            : (
+                <SwitchControl />
+              )
+        })}
+      </SwitchPrimitive.SwitchField>
+    </SwitchStyleContext>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface SwitchControlProps
+  extends
+  React.ComponentProps<typeof SwitchPrimitive.SwitchButton>,
+  VariantProps<typeof switchVariants> {}
+
+const SwitchControl = ({
+  className,
+  size: sizeProp,
+  ...props
+}: SwitchControlProps) => {
+  const labelContext = useSlottedContext(LabelContext)
+  const styleContext = useContext(SwitchStyleContext)
+  const { id: labelId } = labelContext ?? {}
+  const size = sizeProp ?? styleContext.size
+
+  return (
+    <SwitchPrimitive.SwitchButton
+      data-switch-control=""
+      className={composeRenderProps(className, className =>
+        control({ size, className })
+      )}
+      {...props}
+    >
+      {composeRenderProps(props.children, (children, renderProps) => {
+        return (
+          <InternalSwitchContext value={{ ...renderProps, size }}>
+            <Provider
+              values={[[LabelContext, { id: labelId, elementType: 'span' }]]}
+            >
+              {children ?? <SwitchIndicator />}
+            </Provider>
+          </InternalSwitchContext>
+        )
+      })}
+    </SwitchPrimitive.SwitchButton>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface SwitchIndicatorProps extends React.ComponentProps<'span'> {}
+
+const SwitchIndicator = ({ className, ...props }: SwitchIndicatorProps) => {
+  const ctx = useContext(InternalSwitchContext)
+
+  if (!ctx) {
+    return (
+      <SwitchControl>
+        <SwitchIndicator className={className} {...props} />
+      </SwitchControl>
+    )
+  }
+
+  return (
+    <span
+      data-switch-indicator=""
+      data-rac=""
+      data-selected={ctx.isSelected || undefined}
+      data-pressed={ctx.isPressed || undefined}
+      data-hovered={ctx.isHovered || undefined}
+      data-focused={ctx.isFocused || undefined}
+      data-focus-visible={ctx.isFocusVisible || undefined}
+      data-disabled={ctx.isDisabled || undefined}
+      data-readonly={ctx.isReadOnly || undefined}
+      data-invalid={ctx.isInvalid || undefined}
+      data-required={ctx.isRequired || undefined}
+      className={indicator({ size: ctx.size, className })}
+      {...props}
+    >
+      {props.children ?? <SwitchThumb />}
+    </span>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+interface SwitchThumbProps extends React.ComponentProps<'span'> {}
+
+const SwitchThumb = ({ className, ...props }: SwitchThumbProps) => {
+  const ctx = useContext(InternalSwitchContext)
+
+  return (
+    <span
+      data-rac=""
+      data-selected={ctx?.isSelected || undefined}
+      data-pressed={ctx?.isPressed || undefined}
+      data-hovered={ctx?.isHovered || undefined}
+      data-focused={ctx?.isFocused || undefined}
+      data-focus-visible={ctx?.isFocusVisible || undefined}
+      data-disabled={ctx?.isDisabled || undefined}
+      data-readonly={ctx?.isReadOnly || undefined}
+      data-invalid={ctx?.isInvalid || undefined}
+      data-required={ctx?.isRequired || undefined}
+      className={thumb({ size: ctx?.size, className })}
+      {...props}
+    />
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+
+export type {
+  SwitchControlProps,
+  SwitchIndicatorProps,
+  SwitchProps,
+  SwitchThumbProps
+}
+export { Switch, SwitchControl, SwitchIndicator, SwitchThumb }

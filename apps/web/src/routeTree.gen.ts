@@ -13,11 +13,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedAppRouteImport } from './routes/_authed/_app'
+import { Route as SNoteIdRouteImport } from './routes/s/$noteId'
+import { Route as UploadsKeyRouteImport } from './routes/uploads/$key'
 import { Route as AuthedAppHomeRouteImport } from './routes/_authed/_app/home'
 import { Route as AuthedAppNotesRouteImport } from './routes/_authed/_app/notes'
 import { Route as AuthedAppSettingsRouteImport } from './routes/_authed/_app/settings'
 import { Route as AuthedNotesChar123noteIdChar125DotmdRouteImport } from './routes/_authed/notes/{$noteId}[.]md'
-import { Route as AuthedUploadsKeyRouteImport } from './routes/_authed/uploads/$key'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthedAppNotesIndexRouteImport } from './routes/_authed/_app/notes/index'
 import { Route as AuthedAppNotesNoteIdRouteImport } from './routes/_authed/_app/notes/$noteId'
@@ -40,6 +41,16 @@ const AuthedAppRoute = AuthedAppRouteImport.update({
   id: '/_app',
   getParentRoute: () => AuthedRoute,
 } as any)
+const SNoteIdRoute = SNoteIdRouteImport.update({
+  id: '/s/$noteId',
+  path: '/s/$noteId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UploadsKeyRoute = UploadsKeyRouteImport.update({
+  id: '/uploads/$key',
+  path: '/uploads/$key',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedAppHomeRoute = AuthedAppHomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -61,11 +72,6 @@ const AuthedNotesChar123noteIdChar125DotmdRoute =
     path: '/notes/{$noteId}.md',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedUploadsKeyRoute = AuthedUploadsKeyRouteImport.update({
-  id: '/uploads/$key',
-  path: '/uploads/$key',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -85,11 +91,12 @@ const AuthedAppNotesNoteIdRoute = AuthedAppNotesNoteIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/s/$noteId': typeof SNoteIdRoute
+  '/uploads/$key': typeof UploadsKeyRoute
   '/home': typeof AuthedAppHomeRoute
   '/notes': typeof AuthedAppNotesRouteWithChildren
   '/settings': typeof AuthedAppSettingsRoute
   '/notes/{$noteId}.md': typeof AuthedNotesChar123noteIdChar125DotmdRoute
-  '/uploads/$key': typeof AuthedUploadsKeyRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/notes/$noteId': typeof AuthedAppNotesNoteIdRoute
   '/notes/': typeof AuthedAppNotesIndexRoute
@@ -97,10 +104,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/s/$noteId': typeof SNoteIdRoute
+  '/uploads/$key': typeof UploadsKeyRoute
   '/home': typeof AuthedAppHomeRoute
   '/settings': typeof AuthedAppSettingsRoute
   '/notes/{$noteId}.md': typeof AuthedNotesChar123noteIdChar125DotmdRoute
-  '/uploads/$key': typeof AuthedUploadsKeyRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/notes/$noteId': typeof AuthedAppNotesNoteIdRoute
   '/notes': typeof AuthedAppNotesIndexRoute
@@ -111,11 +119,12 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authed/_app': typeof AuthedAppRouteWithChildren
+  '/s/$noteId': typeof SNoteIdRoute
+  '/uploads/$key': typeof UploadsKeyRoute
   '/_authed/_app/home': typeof AuthedAppHomeRoute
   '/_authed/_app/notes': typeof AuthedAppNotesRouteWithChildren
   '/_authed/_app/settings': typeof AuthedAppSettingsRoute
   '/_authed/notes/{$noteId}.md': typeof AuthedNotesChar123noteIdChar125DotmdRoute
-  '/_authed/uploads/$key': typeof AuthedUploadsKeyRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_authed/_app/notes/$noteId': typeof AuthedAppNotesNoteIdRoute
   '/_authed/_app/notes/': typeof AuthedAppNotesIndexRoute
@@ -125,11 +134,12 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/s/$noteId'
+    | '/uploads/$key'
     | '/home'
     | '/notes'
     | '/settings'
     | '/notes/{$noteId}.md'
-    | '/uploads/$key'
     | '/api/auth/$'
     | '/notes/$noteId'
     | '/notes/'
@@ -137,10 +147,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/s/$noteId'
+    | '/uploads/$key'
     | '/home'
     | '/settings'
     | '/notes/{$noteId}.md'
-    | '/uploads/$key'
     | '/api/auth/$'
     | '/notes/$noteId'
     | '/notes'
@@ -150,11 +161,12 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/login'
     | '/_authed/_app'
+    | '/s/$noteId'
+    | '/uploads/$key'
     | '/_authed/_app/home'
     | '/_authed/_app/notes'
     | '/_authed/_app/settings'
     | '/_authed/notes/{$noteId}.md'
-    | '/_authed/uploads/$key'
     | '/api/auth/$'
     | '/_authed/_app/notes/$noteId'
     | '/_authed/_app/notes/'
@@ -164,6 +176,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  SNoteIdRoute: typeof SNoteIdRoute
+  UploadsKeyRoute: typeof UploadsKeyRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -197,6 +211,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAppRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/s/$noteId': {
+      id: '/s/$noteId'
+      path: '/s/$noteId'
+      fullPath: '/s/$noteId'
+      preLoaderRoute: typeof SNoteIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/uploads/$key': {
+      id: '/uploads/$key'
+      path: '/uploads/$key'
+      fullPath: '/uploads/$key'
+      preLoaderRoute: typeof UploadsKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed/_app/home': {
       id: '/_authed/_app/home'
       path: '/home'
@@ -223,13 +251,6 @@ declare module '@tanstack/react-router' {
       path: '/notes/{$noteId}.md'
       fullPath: '/notes/{$noteId}.md'
       preLoaderRoute: typeof AuthedNotesChar123noteIdChar125DotmdRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/uploads/$key': {
-      id: '/_authed/uploads/$key'
-      path: '/uploads/$key'
-      fullPath: '/uploads/$key'
-      preLoaderRoute: typeof AuthedUploadsKeyRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/api/auth/$': {
@@ -289,14 +310,12 @@ const AuthedAppRouteWithChildren = AuthedAppRoute._addFileChildren(
 interface AuthedRouteChildren {
   AuthedAppRoute: typeof AuthedAppRouteWithChildren
   AuthedNotesChar123noteIdChar125DotmdRoute: typeof AuthedNotesChar123noteIdChar125DotmdRoute
-  AuthedUploadsKeyRoute: typeof AuthedUploadsKeyRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAppRoute: AuthedAppRouteWithChildren,
   AuthedNotesChar123noteIdChar125DotmdRoute:
     AuthedNotesChar123noteIdChar125DotmdRoute,
-  AuthedUploadsKeyRoute: AuthedUploadsKeyRoute,
 }
 
 const AuthedRouteWithChildren =
@@ -306,6 +325,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
   LoginRoute: LoginRoute,
+  SNoteIdRoute: SNoteIdRoute,
+  UploadsKeyRoute: UploadsKeyRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

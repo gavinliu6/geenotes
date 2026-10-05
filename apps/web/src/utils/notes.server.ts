@@ -62,6 +62,7 @@ export function selectNote(userId: string, noteId: string) {
       markdown: true,
       createdAt: true,
       updatedAt: true,
+      sharedAt: true,
     },
     where: and(
       eq(note.id, noteId),

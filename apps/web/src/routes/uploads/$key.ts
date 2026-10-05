@@ -1,17 +1,20 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { auth } from '@/lib/auth'
+import { selectSharedUploadOwner } from '@/utils/share.server'
 import { getUpload } from '@/utils/uploads.server'
 
-export const Route = createFileRoute('/_authed/uploads/$key')({
+export const Route = createFileRoute('/uploads/$key')({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
         const session = await auth.api.getSession({ headers: request.headers })
+        const ownerId
+          = session?.user.id ?? (await selectSharedUploadOwner(params.key))
 
-        if (!session) return new Response('Unauthorized', { status: 401 })
+        if (!ownerId) return new Response('Unauthorized', { status: 401 })
 
-        const object = await getUpload(session.user.id, params.key, request.headers)
+        const object = await getUpload(ownerId, params.key, request.headers)
 
         if (!object) return new Response('Not found', { status: 404 })
 

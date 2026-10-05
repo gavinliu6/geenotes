@@ -33,6 +33,10 @@ export const saveNoteSchema = noteIdSchema
     'Nothing to save'
   )
 
+export const updateNoteShareSchema = noteIdSchema.extend({
+  isShared: z.boolean(),
+})
+
 export const USER_NAME_MAX_LENGTH = 50
 export const PASSWORD_MIN_LENGTH = 8
 export const PASSWORD_MAX_LENGTH = 128
@@ -101,3 +105,4 @@ export type NoteChanges = Omit<SaveNoteInput, 'noteId'>
 export type Note = typeof note.$inferSelect
 export type NoteListItem = Pick<Note, 'id' | 'title' | 'createdAt' | 'updatedAt'>
 export type RecentNoteListItem = NoteListItem & { viewedAt: Date }
+export type SharedNote = Pick<Note, 'id' | 'title' | 'markdown' | 'updatedAt'>

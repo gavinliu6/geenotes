@@ -1,10 +1,10 @@
-import { ArrowsInLineHorizontalIcon, ArrowsOutLineHorizontalIcon } from '@phosphor-icons/react'
-import { ChevronDownIcon } from 'lucide-react'
+import { ChevronDownIcon, FoldHorizontalIcon, UnfoldHorizontalIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { COPIED_DURATION } from '@/components/editor/copy-feedback'
 import { Check, Copy, Markdown, Trash } from '@/components/icons'
 import { NoteListDrawer } from '@/components/note-list-drawer'
+import { ShareNoteButton } from '@/components/share-note-button'
 import { Button } from '@/components/ui/button'
 import { Group } from '@/components/ui/group'
 import { Menu, MenuContent, MenuItem, MenuItemLabel } from '@/components/ui/menu'
@@ -18,7 +18,7 @@ import type { Note } from '@/utils/schemas'
 
 interface NoteToolbarProps {
   className?: string
-  note: Pick<Note, 'id' | 'title' | 'markdown'>
+  note: Pick<Note, 'id' | 'title' | 'markdown' | 'sharedAt'>
   isFullWidth: boolean
   onFullWidthChange: (isFullWidth: boolean) => void
   onDelete: () => void
@@ -48,6 +48,7 @@ export function NoteToolbar({
       </div>
       <div className="ml-auto flex items-center gap-2">
         <PageActions note={note} onDelete={onDelete} />
+        <ShareNoteButton note={note} />
         <Tooltip>
           <Button
             variant="quiet"
@@ -61,8 +62,8 @@ export function NoteToolbar({
             onPress={() => onFullWidthChange(!isFullWidth)}
           >
             {isFullWidth
-              ? <ArrowsInLineHorizontalIcon className="size-4" />
-              : <ArrowsOutLineHorizontalIcon className="size-4" />}
+              ? <FoldHorizontalIcon className="size-4" />
+              : <UnfoldHorizontalIcon className="size-4" />}
           </Button>
           <TooltipContent
             hideArrow

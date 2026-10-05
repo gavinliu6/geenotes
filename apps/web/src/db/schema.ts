@@ -134,6 +134,7 @@ export const note = sqliteTable(
     title: text('title').default('').notNull(),
     markdown: text('markdown').default('').notNull(),
     deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
+    sharedAt: integer('shared_at', { mode: 'timestamp_ms' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),

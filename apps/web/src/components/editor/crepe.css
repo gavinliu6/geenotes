@@ -207,6 +207,10 @@
       }
     }
 
+    & .markdown-alert-title .markdown-alert-label {
+      @apply flex items-center gap-2;
+    }
+
     & .milkdown-link-preview > .link-preview,
     & .milkdown-link-edit > .link-edit {
       @apply h-8 items-center gap-0.5 p-1;
@@ -423,6 +427,14 @@
 
         & .copy-button > .milkdown-icon {
           @apply copy-feedback;
+        }
+      }
+
+      &:where(.ProseMirror[contenteditable='false'] *) .language-button {
+        @apply pointer-events-none;
+
+        & .expand-icon {
+          @apply hidden;
         }
       }
 

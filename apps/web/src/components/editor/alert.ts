@@ -192,54 +192,34 @@ export const alertSchema = $nodeSchema('alert', () => ({
   },
 }))
 
-/** Renders the type as a select in the title so it can be switched in place. */
+/** Renders the type as a select in the title so it can be switched in place; read-only views get a plain label. */
 const alertView = $view(alertSchema.node, (): NodeViewConstructor => (initialNode, view, getPos) => {
   let node = initialNode
   const dom = document.createElement('div')
   const title = document.createElement('div')
-  const select = document.createElement('select')
-  const button = document.createElement('button')
   const contentDOM = document.createElement('div')
 
   dom.className = 'markdown-alert'
   title.className = 'markdown-alert-title'
   title.contentEditable = 'false'
-  select.ariaLabel = 'Alert type'
-  button.replaceChildren(document.createElement('selectedcontent'))
-  select.replaceChildren(button)
   contentDOM.className = 'markdown-alert-content'
-
-  for (const alertType of alertTypes) {
-    const option = document.createElement('option')
-
-    option.value = alertType
-    option.dataset.alertType = alertType
-    option.innerHTML = alertIcons[alertType] + alertLabels[alertType]
-    select.add(option)
-  }
-
-  title.replaceChildren(select)
   dom.replaceChildren(title, contentDOM)
+
+  const renderType = view.editable
+    ? renderTypeSelect(title, (alertType) => {
+        const pos = getPos()
+
+        if (pos === undefined) return
+
+        view.dispatch(view.state.tr.setNodeAttribute(pos, 'alertType', alertType))
+        requestAnimationFrame(() => view.focus())
+      })
+    : renderTypeLabel(title)
 
   const render = () => {
     dom.dataset.alertType = node.attrs.alertType
-    select.value = node.attrs.alertType
+    renderType(node.attrs.alertType as AlertType)
   }
-
-  select.addEventListener('change', () => {
-    const pos = getPos()
-
-    if (pos === undefined) return
-
-    view.dispatch(view.state.tr.setNodeAttribute(pos, 'alertType', select.value))
-    requestAnimationFrame(() => view.focus())
-  })
-
-  select.addEventListener('pointermove', (event) => {
-    const option = event.target instanceof Element ? event.target.closest('option') : null
-
-    if (option && option !== document.activeElement) option.focus()
-  })
 
   render()
 
@@ -259,6 +239,49 @@ const alertView = $view(alertSchema.node, (): NodeViewConstructor => (initialNod
       title.contains(target) || (target === dom && type === 'attributes'),
   }
 })
+
+function renderTypeSelect(title: HTMLElement, onChange: (alertType: AlertType) => void) {
+  const select = document.createElement('select')
+  const button = document.createElement('button')
+
+  select.ariaLabel = 'Alert type'
+  button.replaceChildren(document.createElement('selectedcontent'))
+  select.replaceChildren(button)
+
+  for (const alertType of alertTypes) {
+    const option = document.createElement('option')
+
+    option.value = alertType
+    option.dataset.alertType = alertType
+    option.innerHTML = alertIcons[alertType] + alertLabels[alertType]
+    select.add(option)
+  }
+
+  select.addEventListener('change', () => onChange(select.value as AlertType))
+
+  select.addEventListener('pointermove', (event) => {
+    const option = event.target instanceof Element ? event.target.closest('option') : null
+
+    if (option && option !== document.activeElement) option.focus()
+  })
+
+  title.replaceChildren(select)
+
+  return (alertType: AlertType) => {
+    select.value = alertType
+  }
+}
+
+function renderTypeLabel(title: HTMLElement) {
+  const label = document.createElement('span')
+
+  label.className = 'markdown-alert-label'
+  title.replaceChildren(label)
+
+  return (alertType: AlertType) => {
+    label.innerHTML = alertIcons[alertType].trim() + alertLabels[alertType]
+  }
+}
 
 export const wrapInAlertCommand = $command('WrapInAlert', ctx => (alertType: AlertType = 'note') =>
   wrapIn(alertSchema.type(ctx), { alertType }))

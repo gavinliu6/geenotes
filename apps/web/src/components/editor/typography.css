@@ -120,9 +120,13 @@
       @apply relative -ml-6 list-none pl-7;
 
       &::before {
-        @apply absolute top-[calc(0.5lh-0.5rem)] left-0.5 size-4 cursor-pointer
-          rounded-xs border border-border-control bg-bg;
+        @apply absolute top-[calc(0.5lh-0.5rem)] left-0.5 size-4 rounded-xs
+          border border-border-control bg-bg;
         content: '';
+      }
+
+      &:where([contenteditable='true'] *)::before {
+        @apply cursor-pointer;
       }
 
       &[data-checked='true'] {
