@@ -18,12 +18,10 @@ import { Link } from '@/components/ui/link'
 import { Loader } from '@/components/ui/loader'
 import { Marker, MarkerContent } from '@/components/ui/marker'
 import { TextField } from '@/components/ui/text-field'
-import { Toaster, ToastPrimitive } from '@/components/ui/toast'
+import { toastManager } from '@/components/ui/toast'
 import { getSession } from '@/lib/auth.functions'
 import { authClient } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
-
-const toastManager = ToastPrimitive.createToastManager()
 
 const searchSchema = z.object({
   // Only accept same-origin paths so a crafted link can't bounce a signed-in
@@ -598,7 +596,6 @@ function LoginPage() {
           </div>
         </div>
       </main>
-      <Toaster position="top-center" toastManager={toastManager} />
     </div>
   )
 }
