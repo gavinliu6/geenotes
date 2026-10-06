@@ -5,7 +5,7 @@ import { Check, Copy, Share, ShareFilled } from '@/components/icons'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Description, Label } from '@/components/ui/field'
-import { Input, InputGroup, InputGroupAddon } from '@/components/ui/input'
+import { Input, InputGroup } from '@/components/ui/input'
 import { Popover } from '@/components/ui/popover'
 import { Switch, SwitchControl } from '@/components/ui/switch'
 import { TextField } from '@/components/ui/text-field'
@@ -88,24 +88,30 @@ function ShareLinkField({ noteId }: { noteId: string }) {
   }
 
   return (
-    <TextField aria-label="Share link" value={url} isReadOnly>
-      <InputGroup size="sm">
-        <Input onFocus={event => event.currentTarget.select()} />
-        <InputGroupAddon>
-          <Button
-            variant="quiet"
-            size="xs"
-            isIconOnly
-            aria-label="Copy link"
-            onPress={copyLink}
-          >
-            <span className="copy-feedback" data-copied={isCopied || undefined}>
-              <Copy />
-              <Check />
-            </span>
-          </Button>
-        </InputGroupAddon>
-      </InputGroup>
-    </TextField>
+    <div className="flex items-center gap-2">
+      <TextField
+        aria-label="Share link"
+        value={url}
+        isReadOnly
+        className="min-w-0 flex-1"
+      >
+        <InputGroup size="sm">
+          <Input onFocus={event => event.currentTarget.select()} />
+        </InputGroup>
+      </TextField>
+      <Button
+        variant="secondary"
+        size="sm"
+        isIconOnly
+        className="shrink-0"
+        aria-label="Copy link"
+        onPress={copyLink}
+      >
+        <span className="copy-feedback" data-copied={isCopied || undefined}>
+          <Copy />
+          <Check />
+        </span>
+      </Button>
+    </div>
   )
 }
