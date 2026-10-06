@@ -193,20 +193,70 @@ function DrawerPopupElement({
   'aria-describedby': _ariaDescribedBy,
   'aria-labelledby': _ariaLabelledBy,
   role: _role,
+  onPointerDownCapture,
+  onPointerMoveCapture,
+  onPointerUpCapture,
+  onPointerCancelCapture,
+  placement,
   swiping,
   ...props
-}: DrawerPopupRenderProps & { swiping: boolean }) {
-  // A swipe that starts on a pressable (menu item, button) never cancels the
-  // react-aria press: the content moves with the finger, so the pointer stays
-  // over the target, and the drawer claims the gesture before the browser
-  // would fire pointercancel. Releasing then fires onPress. Cancel in-flight
-  // presses the way the platform does when a gesture is taken over.
-  React.useEffect(() => {
-    if (!swiping) return
-    document.dispatchEvent(new PointerEvent('pointercancel'))
-  }, [swiping])
+}: DrawerPopupRenderProps & { placement: DrawerPlacement, swiping: boolean }) {
+  const pressStartRef = React.useRef<{
+    pointerId: number
+    x: number
+    y: number
+  } | null>(null)
 
-  return <div {...props} />
+  // Base UI marks touchstart as swiping, even for a stationary tap. Cancel
+  // react-aria's press only after an actual drag, since the popup follows the
+  // finger and otherwise keeps the pointer over the pressed control.
+  const cancelPressOnSwipe = (event: React.PointerEvent<HTMLDivElement>) => {
+    const start = pressStartRef.current
+    if (!swiping || !start || start.pointerId !== event.pointerId) return
+
+    const deltaX = Math.abs(event.clientX - start.x)
+    const deltaY = Math.abs(event.clientY - start.y)
+    const isHorizontal = placement === 'left' || placement === 'right'
+    const distance = isHorizontal ? deltaX : deltaY
+    const crossDistance = isHorizontal ? deltaY : deltaX
+    if (distance < 10 || distance < crossDistance) return
+
+    pressStartRef.current = null
+    event.currentTarget.ownerDocument.dispatchEvent(new PointerEvent('pointercancel', {
+      pointerId: event.pointerId,
+      pointerType: event.pointerType,
+    }))
+  }
+
+  return (
+    <div
+      {...props}
+      onPointerDownCapture={(event) => {
+        onPointerDownCapture?.(event)
+        // React portal events also reach the parent drawer. Only track a
+        // press that starts inside this popup's own DOM subtree.
+        if (!event.isPrimary || !event.currentTarget.contains(event.target as Node)) return
+        pressStartRef.current = {
+          pointerId: event.pointerId,
+          x: event.clientX,
+          y: event.clientY,
+        }
+      }}
+      onPointerMoveCapture={(event) => {
+        onPointerMoveCapture?.(event)
+        cancelPressOnSwipe(event)
+      }}
+      onPointerUpCapture={(event) => {
+        onPointerUpCapture?.(event)
+        cancelPressOnSwipe(event)
+        if (pressStartRef.current?.pointerId === event.pointerId) pressStartRef.current = null
+      }}
+      onPointerCancelCapture={(event) => {
+        onPointerCancelCapture?.(event)
+        if (pressStartRef.current?.pointerId === event.pointerId) pressStartRef.current = null
+      }}
+    />
+  )
 }
 
 function getInitialFocusTarget(popupElement: HTMLDivElement | null) {
@@ -325,7 +375,7 @@ function Drawer({
                         className: resolveClassName(className, state),
                       })}
                     render={(renderProps, { swiping }) => (
-                      <DrawerPopupElement {...renderProps} swiping={swiping} />
+                      <DrawerPopupElement {...renderProps} placement={placement} swiping={swiping} />
                     )}
                     ref={popupRef}
                     style={style}

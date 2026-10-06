@@ -11,7 +11,7 @@ import { noteKeys } from './keys'
 import type { NoteListQuery } from './types'
 
 export const defaultNoteListQuery: NoteListQuery = {
-  sortBy: 'created-time',
+  sortBy: 'updated-time',
   direction: 'desc',
 }
 

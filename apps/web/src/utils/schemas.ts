@@ -6,7 +6,7 @@ export const noteSortBySchema = z.enum(['created-time', 'updated-time', 'title']
 export const sortDirectionSchema = z.enum(['asc', 'desc'])
 
 export const listNotesSchema = z.object({
-  sortBy: noteSortBySchema.default('created-time'),
+  sortBy: noteSortBySchema.default('updated-time'),
   direction: sortDirectionSchema.default('desc'),
   cursor: z.string().nullish(),
 })
