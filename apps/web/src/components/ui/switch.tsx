@@ -36,11 +36,12 @@ const switchVariants = tv({
     indicator:
       `
         inline-flex shrink-0 cursor-pointer items-center rounded-full border
-        border-transparent bg-neutral p-0.5
+        border-transparent bg-input p-0.5
         transition-[background-color,border-color,box-shadow]
         read-only:cursor-default
         disabled:cursor-disabled disabled:border-(--disabled-border,transparent)
         disabled:bg-(--disabled-unselected-bg,var(--color-neutral))
+        dark:not-selected:not-disabled:border-border-control
         selected:bg-selection
         disabled:selected:border-transparent
         disabled:selected:bg-(--disabled-selected-bg,var(--color-selection))
