@@ -20,6 +20,8 @@ type EditableNote = Pick<Note, 'id' | 'title' | 'markdown'>
 export interface NoteEditorHandle {
   /** Saves pending edits and resolves once every save has settled. */
   flush: () => Promise<void>
+  /** Focuses the note without entering a text field or scrolling. */
+  focus: () => void
   setLocked: (isLocked: boolean) => void
 }
 
@@ -53,7 +55,11 @@ export function NoteEditor({ ref, note, titleActions, onLockedChange }: NoteEdit
     onLockedChange?.(locked)
   })
 
-  useImperativeHandle(ref, () => ({ flush: autosave.flush, setLocked }), [autosave, setLocked])
+  useImperativeHandle(ref, () => ({
+    flush: autosave.flush,
+    focus: () => rootRef.current?.focus({ preventScroll: true }),
+    setLocked,
+  }), [autosave, setLocked])
 
   useEffect(() => {
     reportLocked(isLocked)
@@ -141,7 +147,7 @@ export function NoteEditor({ ref, note, titleActions, onLockedChange }: NoteEdit
   }
 
   return (
-    <div ref={rootRef} className="flex grow flex-col">
+    <div ref={rootRef} tabIndex={-1} className="flex grow flex-col outline-none">
       <div className={isLoading ? 'invisible h-0' : 'flex grow flex-col'}>
         <div className="flex flex-wrap items-center gap-2 border-b pb-3">
           <div

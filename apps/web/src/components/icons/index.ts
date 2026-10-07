@@ -1,3 +1,4 @@
+export { ArrowWallUp } from './arrow-wall-up.tsx'
 export { Check } from './check.tsx'
 export { Copy } from './copy'
 export { Ellipsis } from './ellipsis.tsx'

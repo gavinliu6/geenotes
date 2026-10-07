@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { FileQuestionIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
+import { BackToTop } from '@/components/back-to-top'
 import type { NoteEditorHandle } from '@/components/editor/note-editor'
 import { NoteEditor } from '@/components/editor/note-editor'
 import { NoteToolbar } from '@/components/note-toolbar'
@@ -49,6 +50,7 @@ function NotePage() {
   const [isFullWidth, setIsFullWidth] = useState(initialIsFullWidth)
   const [isLocked, setIsLocked] = useState(true)
   const editorRef = useRef<NoteEditorHandle>(null)
+  const articleRef = useRef<HTMLElement>(null)
   const { mutate: recordView } = useRecordNoteView()
   const { mutate: deleteNote } = useDeleteNote()
 
@@ -75,6 +77,7 @@ function NotePage() {
         onDelete={() => void handleDelete()}
       />
       <article
+        ref={articleRef}
         className={cn(
           `mx-auto flex w-full grow flex-col px-6 pt-4`,
           !isFullWidth && 'max-w-2xl'
@@ -94,6 +97,11 @@ function NotePage() {
           onLockedChange={setIsLocked}
         />
       </article>
+      <BackToTop
+        key={note.id}
+        targetRef={articleRef}
+        focusTarget={() => editorRef.current?.focus()}
+      />
     </>
   )
 }
