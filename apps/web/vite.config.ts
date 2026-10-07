@@ -13,6 +13,27 @@ const config = defineConfig({
     __VUE_PROD_DEVTOOLS__: 'false',
     __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
   },
+  environments: {
+    client: {
+      build: {
+        rolldownOptions: {
+          output: {
+            codeSplitting: {
+              groups: [
+                { name: 'katex', test: /node_modules[\\/]katex[\\/]/ },
+                { name: 'vue', test: /node_modules[\\/](?:@vue[\\/]|vue[\\/])/ },
+                // Keep CodeMirror's core together; language packs stay dynamically imported.
+                {
+                  name: 'codemirror',
+                  test: /node_modules[\\/]@codemirror[\\/](?:state|view|language|commands|autocomplete|search|lint)[\\/]/,
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+  },
   plugins: [
     devtools(),
     cloudflare({
