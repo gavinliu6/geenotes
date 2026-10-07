@@ -55,6 +55,11 @@
       @apply text-fg-accent underline decoration-border-accent underline-offset-3;
     }
 
+    & a[href^='mailto:' i] {
+      @apply select-text;
+      -webkit-user-drag: none;
+    }
+
     /* ------------------------------- lists -------------------------------- */
     & :is(ul, ol) {
       @apply pl-6;

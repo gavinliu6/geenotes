@@ -1,3 +1,4 @@
+import { editorViewOptionsCtx } from '@milkdown/kit/core'
 import { inlineCodeSchema, linkSchema } from '@milkdown/kit/preset/commonmark'
 import type { Node, ResolvedPos } from '@milkdown/kit/prose/model'
 import { Mark } from '@milkdown/kit/prose/model'
@@ -7,9 +8,13 @@ import type { EditorView } from '@milkdown/kit/prose/view'
 import { Decoration, DecorationSet } from '@milkdown/kit/prose/view'
 import { $prose } from '@milkdown/kit/utils'
 
+import { emailSchema } from './email'
+import type { EmailLinkChange } from './email-link'
+import { emailLinkChanges } from './email-link'
+
 interface Edge {
   pos: number
-  /** The inline code or link that starts or ends here. */
+  /** The inline code, link or email that starts or ends here. */
   mark: Mark
   /** Whether the mark ends here rather than starts. */
   end: boolean
@@ -25,12 +30,17 @@ const segmenter = new Intl.Segmenter()
 /** Milkdown makes inline code non-inclusive, so being inside its end takes stored marks, and ProseMirror then restarts an IME composition in a wrapper that merges into the code text and breaks it. */
 const inclusiveInlineCode = inlineCodeSchema.extendSchema(prev => ctx => ({ ...prev(ctx), inclusive: true }))
 
-/** Gives each edge of inline code, and the end of each link, a caret stop inside the mark and one outside it, which the arrow keys step through. The caret can leave code or a link that ends a paragraph without leaving the paragraph, and text typed after a link stays out of it. */
+/** Gives each edge of inline code, and the end of each link or email, a caret stop inside the mark and one outside it, which the arrow keys step through. The caret can leave a mark that ends a paragraph without leaving the paragraph, and text typed after escaping stays out of it. */
 const markEdges = $prose((ctx) => {
   const code = inlineCodeSchema.type(ctx)
   const link = linkSchema.type(ctx)
+  const email = emailSchema.type(ctx)
   let editor: EditorView | null = null
   let pointerX: number | null = null
+  let pointerY: number | null = null
+  let pointerDown = false
+  let pointerMoved = false
+  let pointerTimer: ReturnType<typeof setTimeout> | undefined
 
   const codeEdgeAt = ($pos: ResolvedPos, before: Node | null, after: Node | null): Edge | null => {
     const codeBefore = !!before && !!code.isInSet(before.marks)
@@ -49,23 +59,23 @@ const markEdges = $prose((ctx) => {
       enterable: true,
       inside: inner.marks,
       outside: $pos.marks().filter(other =>
-        other.type !== code && (other.type !== link || other.isInSet(outer?.marks ?? []))),
+        other.type !== code && ((other.type !== link && other.type !== email) || other.isInSet(outer?.marks ?? []))),
     }
   }
 
-  /** A link's start only needs a stop when the link opens its paragraph, where the caret would otherwise inherit the link; after text it doesn't. */
+  /** A link or email's start only needs a stop when it opens its paragraph, where the caret would otherwise inherit the mark; after text it doesn't. */
   const linkEdgeAt = ($pos: ResolvedPos, before: Node | null, after: Node | null): Edge | null => {
-    const outside = $pos.marks().filter(other => other.type !== link)
+    const outside = $pos.marks().filter(other => other.type !== link && other.type !== email)
 
     if (before) {
-      const mark = link.isInSet(before.marks)
+      const mark = link.isInSet(before.marks) ?? email.isInSet(before.marks)
 
       return mark && !mark.isInSet(after?.marks ?? [])
         ? { pos: $pos.pos, mark, end: true, enterable: true, inside: before.marks, outside }
         : null
     }
 
-    const mark = after && link.isInSet(after.marks)
+    const mark = after && (link.isInSet(after.marks) ?? email.isInSet(after.marks))
 
     return mark ? { pos: $pos.pos, mark, end: false, enterable: false, inside: after.marks, outside } : null
   }
@@ -91,10 +101,10 @@ const markEdges = $prose((ctx) => {
     return (inside && !edge.end) || !Mark.sameSet($pos.marks(), marks) ? marks : null
   }
 
-  /** ProseMirror carries the marks of deleted text over to the next input, which would bring back code or a link that was deleted in full. */
+  /** ProseMirror carries the marks of deleted text over to the next input, which would bring back code, a link or an email that was deleted in full. */
   const withoutDeletedMarks = ({ storedMarks, selection: { $head }, tr }: EditorState) => {
     const touching = [...$head.nodeBefore?.marks ?? [], ...$head.nodeAfter?.marks ?? []]
-    const kept = storedMarks?.filter(({ type }) => (type !== code && type !== link) || type.isInSet(touching))
+    const kept = storedMarks?.filter(({ type }) => (type !== code && type !== link && type !== email) || type.isInSet(touching))
 
     if (!kept || kept.length === storedMarks?.length) return null
 
@@ -110,7 +120,7 @@ const markEdges = $prose((ctx) => {
     return state.tr.setStoredMarks(stored).setMeta(key, true)
   }
 
-  /** Clicks on code glyphs land inside the code; clicks at a link's end land outside the link. */
+  /** Clicks on code glyphs land inside the code; clicks at a link or email's end land outside its mark. */
   const clickedInside = (edge: Edge) =>
     edge.mark.type === code && !!editor && pointerX !== null && insideAt(editor, edge, pointerX)
 
@@ -122,12 +132,17 @@ const markEdges = $prose((ctx) => {
       const edge = edgeOf(state)
       const edited = transactions.some(tr => tr.docChanged)
 
+      if (pointerDown && !edited) return null
       if (!edge) return edited ? withoutDeletedMarks(state) : null
       if (!edge.enterable) return isInside(state, edge) ? withSide(state, edge, false) : null
       if (edited) {
+        const changes: EmailLinkChange[] = transactions.flatMap(tr => tr.getMeta(emailLinkChanges) ?? [])
+        const renamed = changes.find(change => change.next?.eq(edge.mark)
+          && (edge.end ? change.to : change.from) === edge.pos)
+        const previous = renamed ? { ...edge, mark: renamed.previous } : edge
         // Range edits inherit transaction marks; their head depends on selection direction.
         return oldState.selection instanceof TextSelection && oldState.selection.empty
-          ? withSide(state, edge, isInside(oldState, edge))
+          ? withSide(state, edge, isInside(oldState, previous))
           : null
       }
       if (!transactions.some(tr => tr.selectionSet)) return null
@@ -179,6 +194,14 @@ const markEdges = $prose((ctx) => {
         return true
       },
       decorations: (state) => {
+        const editable = editor?.editable ?? ctx.get(editorViewOptionsCtx).editable?.(state) ?? true
+
+        if (!editable || pointerDown) return null
+
+        const nativeSelection = editor?.dom.ownerDocument.getSelection()
+
+        if (nativeSelection?.rangeCount && !nativeSelection.isCollapsed) return null
+
         const edge = edgeOf(state)
         const inside = !!edge && isInside(state, edge)
 
@@ -204,14 +227,44 @@ const markEdges = $prose((ctx) => {
       editor = view
 
       const onPointerDown = (event: PointerEvent) => {
-        pointerX = event.clientX
+        pointerX = view.editable ? event.clientX : null
+
+        if (!view.editable || event.button !== 0) return
+
+        clearTimeout(pointerTimer)
+        pointerY = event.clientY
+        pointerDown = true
+        pointerMoved = false
+        // Remove the caret widget before native selection starts; changing it during a drag collapses the range.
+        view.dispatch(view.state.tr.setMeta(key, true))
+      }
+
+      const onPointerMove = (event: PointerEvent) => {
+        if (!pointerDown || pointerX === null || pointerY === null) return
+
+        if (Math.abs(event.clientX - pointerX) > 4 || Math.abs(event.clientY - pointerY) > 4) pointerMoved = true
+      }
+
+      const onPointerEnd = () => {
+        if (!pointerDown) return
+
+        clearTimeout(pointerTimer)
+        pointerTimer = setTimeout(() => {
+          pointerDown = false
+
+          if (!view.isDestroyed) view.dispatch(view.state.tr.setMeta(key, true))
+        })
       }
 
       const onClick = () => {
         setTimeout(() => {
+          if (!view.editable || view.isDestroyed || pointerDown || pointerMoved) return
+          // Native ranges can appear before ProseMirror updates its selection.
+          if (!view.dom.ownerDocument.getSelection()?.isCollapsed) return
+
           const edge = edgeOf(view.state)
 
-          if (!edge || pointerX === null || view.isDestroyed) return
+          if (!edge || pointerX === null) return
 
           const tr = withSide(view.state, edge, clickedInside(edge))
 
@@ -222,12 +275,19 @@ const markEdges = $prose((ctx) => {
 
       view.dom.addEventListener('pointerdown', onPointerDown, true)
       view.dom.addEventListener('click', onClick)
+      view.dom.ownerDocument.addEventListener('pointermove', onPointerMove, true)
+      view.dom.ownerDocument.addEventListener('pointerup', onPointerEnd, true)
+      view.dom.ownerDocument.addEventListener('pointercancel', onPointerEnd, true)
 
       return {
         destroy: () => {
           editor = null
+          clearTimeout(pointerTimer)
           view.dom.removeEventListener('pointerdown', onPointerDown, true)
           view.dom.removeEventListener('click', onClick)
+          view.dom.ownerDocument.removeEventListener('pointermove', onPointerMove, true)
+          view.dom.ownerDocument.removeEventListener('pointerup', onPointerEnd, true)
+          view.dom.ownerDocument.removeEventListener('pointercancel', onPointerEnd, true)
         },
       }
     },

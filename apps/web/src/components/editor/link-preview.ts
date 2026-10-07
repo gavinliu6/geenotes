@@ -6,13 +6,15 @@ import type { Mark, MarkType } from '@milkdown/kit/prose/model'
 import type { PluginView } from '@milkdown/kit/prose/state'
 import type { EditorView } from '@milkdown/kit/prose/view'
 
+import { emailSchema } from './email'
+
 /** Milkdown's link preview view, whose class isn't exported. */
 interface LinkPreview extends PluginView {
   show: (mark: Mark, from: number, to: number, rect: DOMRect) => void
   hide: () => void
 }
 
-/** Previews the whole hovered link whether or not the editor has focus; Milkdown's preview needs focus and covers only the hovered text node, so editing or removing a partly bold link from it splits the link. Read-only links don't navigate on click either, so links always open from the preview. */
+/** Previews the whole hovered link whether or not the editor has focus; Milkdown's preview needs focus and covers only the hovered text node, so editing or removing a partly bold link from it splits the link. Bare email addresses edit as text and open directly in read-only mode; other links open from the preview. */
 export function linkHoverPreview(ctx: Ctx) {
   ctx.update(linkPreviewTooltip.key, (spec) => {
     const createView = spec.view
@@ -47,7 +49,15 @@ export function linkHoverPreview(ctx: Ctx) {
             timer = setTimeout(() => update(view, target), 50)
           },
           click: (view, event) => {
-            if (!view.editable && event.target instanceof Element && event.target.closest('a')) event.preventDefault()
+            const element = event.target instanceof Element ? event.target.closest('a') : null
+
+            if (!element) return false
+
+            const email = !!linkAt(view, element, emailSchema.type(ctx))
+            const selection = view.dom.ownerDocument.getSelection()
+            const selected = !!selection && !selection.isCollapsed
+
+            if (view.editable === email || (!view.editable && selected)) event.preventDefault()
 
             return false
           },
@@ -76,5 +86,8 @@ function linkAt(view: EditorView, target: EventTarget | null, type: MarkType) {
   while (start > 0 && mark.isInSet(parent.child(start - 1).marks)) start--
   while (end < parent.childCount && mark.isInSet(parent.child(end).marks)) end++
 
-  return { mark, from: $pos.posAtIndex(start), to: $pos.posAtIndex(end) }
+  const from = $pos.posAtIndex(start)
+  const to = $pos.posAtIndex(end)
+
+  return { mark, from, to }
 }

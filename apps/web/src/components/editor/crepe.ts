@@ -9,6 +9,7 @@ import { alertCommands } from './alert'
 import { bracketPairs } from './bracket-pairs'
 import { changeListener } from './change-listener'
 import { codeCopyFeedback, linkCopyFeedback } from './copy-feedback'
+import { emailSyntax } from './email-syntax'
 import { failedImages } from './failed-images'
 import { createFeatureConfigs, features } from './features'
 import { backtickPairs, innermostInlineCode } from './inline-code'
@@ -81,6 +82,7 @@ export function createCrepe(
     .use(backtickPairs)
     .use(bracketPairs)
     .use(linkSyntax)
+    .use(emailSyntax)
     .use(slashMenuHighlight)
     .use(changeListener(onChange))
 

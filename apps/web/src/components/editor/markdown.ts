@@ -6,6 +6,8 @@ import remarkCjkFriendly from 'remark-cjk-friendly'
 import remarkCjkFriendlyGfmStrikethrough from 'remark-cjk-friendly-gfm-strikethrough'
 
 import { alertNode } from './alert'
+import { emailMarks } from './email'
+import { remarkEscapedAutolinks } from './escaped-autolinks'
 import { supSubMarks } from './sup-sub'
 
 interface MdastNode {
@@ -19,6 +21,8 @@ const cjkFriendlyStrikethrough = $remark(
   'remarkCjkFriendlyGfmStrikethrough',
   () => remarkCjkFriendlyGfmStrikethrough
 )
+
+const escapedAutolinks = $remark('escapedAutolinks', () => remarkEscapedAutolinks)
 
 /** Milkdown drops images whose title is `null`, which is what remark gives untitled ones. */
 const untitledImages = $remark('untitledImages', () => () => fillImageTitles)
@@ -82,6 +86,8 @@ export function withMarkdownDialect(editor: Editor) {
     })
     .use(cjkFriendly)
     .use(cjkFriendlyStrikethrough)
+    .use(escapedAutolinks)
+    .use(emailMarks)
     .use(untitledImages)
     .use(imageBlockCaption)
     .use(supSubMarks)
