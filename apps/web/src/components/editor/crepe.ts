@@ -1,13 +1,15 @@
 import { Crepe } from '@milkdown/crepe'
 import { editorViewOptionsCtx } from '@milkdown/kit/core'
 import { uploadConfig } from '@milkdown/kit/plugin/upload'
-import { inlineCodeInputRule } from '@milkdown/kit/preset/commonmark'
+import { emphasisStarInputRule, emphasisUnderscoreInputRule, inlineCodeInputRule, strongInputRule } from '@milkdown/kit/preset/commonmark'
+import { strikethroughInputRule } from '@milkdown/kit/preset/gfm'
 
 import { alertCommands } from './alert'
 import { bracketPairs } from './bracket-pairs'
 import { changeListener } from './change-listener'
 import { codeCopyFeedback, linkCopyFeedback } from './copy-feedback'
 import { emailSyntax } from './email-syntax'
+import { emphasisSyntax } from './emphasis-syntax'
 import { failedImages } from './failed-images'
 import { createFeatureConfigs, features } from './features'
 import { uploadImageFile, uploadImages } from './image-upload'
@@ -52,6 +54,10 @@ export function createCrepe(
   })
 
   void crepe.editor.remove(inlineCodeInputRule)
+  void crepe.editor.remove(strongInputRule)
+  void crepe.editor.remove(emphasisStarInputRule)
+  void crepe.editor.remove(emphasisUnderscoreInputRule)
+  void crepe.editor.remove(strikethroughInputRule)
 
   withMarkdownDialect(crepe.editor)
     .config((ctx) => {
@@ -84,6 +90,7 @@ export function createCrepe(
     .use(innermostInlineCode)
     .use(backtickPairs)
     .use(bracketPairs)
+    .use(emphasisSyntax)
     .use(linkSyntax)
     .use(emailSyntax)
     .use(slashMenuHighlight)
