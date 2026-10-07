@@ -1,5 +1,6 @@
 import { editorViewOptionsCtx } from '@milkdown/kit/core'
-import { inlineCodeSchema, linkSchema } from '@milkdown/kit/preset/commonmark'
+import { emphasisSchema, inlineCodeSchema, linkSchema, strongSchema } from '@milkdown/kit/preset/commonmark'
+import { strikethroughSchema } from '@milkdown/kit/preset/gfm'
 import type { Node, ResolvedPos } from '@milkdown/kit/prose/model'
 import { Mark } from '@milkdown/kit/prose/model'
 import type { EditorState } from '@milkdown/kit/prose/state'
@@ -14,7 +15,7 @@ import { emailLinkChanges } from './email-link'
 
 interface Edge {
   pos: number
-  /** The inline code, link or email that starts or ends here. */
+  /** The inline mark that starts or ends here. */
   mark: Mark
   /** Whether the mark ends here rather than starts. */
   end: boolean
@@ -30,11 +31,13 @@ const segmenter = new Intl.Segmenter()
 /** Milkdown makes inline code non-inclusive, so being inside its end takes stored marks, and ProseMirror then restarts an IME composition in a wrapper that merges into the code text and breaks it. */
 const inclusiveInlineCode = inlineCodeSchema.extendSchema(prev => ctx => ({ ...prev(ctx), inclusive: true }))
 
-/** Gives each edge of inline code, and the end of each link or email, a caret stop inside the mark and one outside it, which the arrow keys step through. The caret can leave a mark that ends a paragraph without leaving the paragraph, and text typed after escaping stays out of it. */
+/** Gives each edge of code and emphasis, and the end of each link or email, a caret stop inside the mark and one outside it, which the arrow keys step through. The caret can leave a mark that ends a paragraph without leaving the paragraph, and text typed after escaping stays out of it. */
 const markEdges = $prose((ctx) => {
   const code = inlineCodeSchema.type(ctx)
   const link = linkSchema.type(ctx)
   const email = emailSchema.type(ctx)
+  const inlineMarks = [code, emphasisSchema.type(ctx), strongSchema.type(ctx), strikethroughSchema.type(ctx)]
+  const boundaryMarks = [...inlineMarks, link, email]
   let editor: EditorView | null = null
   let pointerX: number | null = null
   let pointerY: number | null = null
@@ -42,25 +45,31 @@ const markEdges = $prose((ctx) => {
   let pointerMoved = false
   let pointerTimer: ReturnType<typeof setTimeout> | undefined
 
-  const codeEdgeAt = ($pos: ResolvedPos, before: Node | null, after: Node | null): Edge | null => {
-    const codeBefore = !!before && !!code.isInSet(before.marks)
-    const codeAfter = !!after && !!code.isInSet(after.marks)
-    const inner = codeBefore ? before : after
-    const mark = inner && code.isInSet(inner.marks)
+  const inlineEdgeAt = ($pos: ResolvedPos, before: Node | null, after: Node | null): Edge | null => {
+    for (const type of inlineMarks) {
+      const beforeMark = type.isInSet(before?.marks ?? [])
+      const afterMark = type.isInSet(after?.marks ?? [])
 
-    if (codeBefore === codeAfter || !inner || !mark) return null
+      if (beforeMark && afterMark && beforeMark.eq(afterMark)) continue
 
-    const outer = codeBefore ? after : before
+      const inner = beforeMark ? before : after
+      const outer = beforeMark ? after : before
+      const mark = beforeMark ?? afterMark
 
-    return {
-      pos: $pos.pos,
-      mark,
-      end: codeBefore,
-      enterable: true,
-      inside: inner.marks,
-      outside: $pos.marks().filter(other =>
-        other.type !== code && ((other.type !== link && other.type !== email) || other.isInSet(outer?.marks ?? []))),
+      if (!inner || !mark) continue
+
+      return {
+        pos: $pos.pos,
+        mark,
+        end: !!beforeMark,
+        enterable: true,
+        inside: inner.marks,
+        outside: $pos.marks().filter(other =>
+          !boundaryMarks.includes(other.type) || other.isInSet(outer?.marks ?? [])),
+      }
     }
+
+    return null
   }
 
   /** A link or email's start only needs a stop when it opens its paragraph, where the caret would otherwise inherit the mark; after text it doesn't. */
@@ -85,7 +94,7 @@ const markEdges = $prose((ctx) => {
 
     if (!parent.isTextblock || parent.type.spec.code || $pos.textOffset) return null
 
-    return codeEdgeAt($pos, before, after) ?? linkEdgeAt($pos, before, after)
+    return inlineEdgeAt($pos, before, after) ?? linkEdgeAt($pos, before, after)
   }
 
   const edgeOf = ({ selection }: EditorState) =>
@@ -94,17 +103,17 @@ const markEdges = $prose((ctx) => {
   const isInside = ({ storedMarks, selection }: EditorState, edge: Edge) =>
     !!edge.mark.isInSet(storedMarks ?? selection.$head.marks())
 
-  /** Stored marks only where they differ from the position's own marks, plus inside a code start, where the composition has to restart inside the code. */
+  /** Stored marks only where they differ from the position's own marks, plus inside a mark's start, where the composition has to restart inside it. */
   const storedFor = ($pos: ResolvedPos, edge: Edge, inside: boolean) => {
     const marks = inside ? edge.inside : edge.outside
 
     return (inside && !edge.end) || !Mark.sameSet($pos.marks(), marks) ? marks : null
   }
 
-  /** ProseMirror carries the marks of deleted text over to the next input, which would bring back code, a link or an email that was deleted in full. */
+  /** ProseMirror carries the marks of deleted text over to the next input, which would bring back a mark that was deleted in full. */
   const withoutDeletedMarks = ({ storedMarks, selection: { $head }, tr }: EditorState) => {
     const touching = [...$head.nodeBefore?.marks ?? [], ...$head.nodeAfter?.marks ?? []]
-    const kept = storedMarks?.filter(({ type }) => (type !== code && type !== link && type !== email) || type.isInSet(touching))
+    const kept = storedMarks?.filter(mark => !boundaryMarks.includes(mark.type) || mark.isInSet(touching))
 
     if (!kept || kept.length === storedMarks?.length) return null
 
@@ -120,9 +129,9 @@ const markEdges = $prose((ctx) => {
     return state.tr.setStoredMarks(stored).setMeta(key, true)
   }
 
-  /** Clicks on code glyphs land inside the code; clicks at a link or email's end land outside its mark. */
+  /** Clicks on formatted glyphs land inside; clicks at a link or email's end land outside its mark. */
   const clickedInside = (edge: Edge) =>
-    edge.mark.type === code && !!editor && pointerX !== null && insideAt(editor, edge, pointerX)
+    inlineMarks.includes(edge.mark.type) && !!editor && pointerX !== null && insideAt(editor, edge, pointerX)
 
   return new Plugin({
     key,
@@ -133,17 +142,19 @@ const markEdges = $prose((ctx) => {
       const edited = transactions.some(tr => tr.docChanged)
 
       if (pointerDown && !edited) return null
-      if (!edge) return edited ? withoutDeletedMarks(state) : null
-      if (!edge.enterable) return isInside(state, edge) ? withSide(state, edge, false) : null
+      const cleared = edited ? withoutDeletedMarks(state) : null
+
+      if (!edge) return cleared
+      if (!edge.enterable) return (isInside(state, edge) ? withSide(state, edge, false) : null) ?? cleared
       if (edited) {
         const changes: EmailLinkChange[] = transactions.flatMap(tr => tr.getMeta(emailLinkChanges) ?? [])
         const renamed = changes.find(change => change.next?.eq(edge.mark)
           && (edge.end ? change.to : change.from) === edge.pos)
         const previous = renamed ? { ...edge, mark: renamed.previous } : edge
         // Range edits inherit transaction marks; their head depends on selection direction.
-        return oldState.selection instanceof TextSelection && oldState.selection.empty
+        return (oldState.selection instanceof TextSelection && oldState.selection.empty
           ? withSide(state, edge, isInside(oldState, previous))
-          : null
+          : null) ?? cleared
       }
       if (!transactions.some(tr => tr.selectionSet)) return null
 
@@ -298,7 +309,7 @@ function grapheme(text: string, forward: boolean) {
   return segmenter.segment(text).containing(forward ? 0 : text.length - 1)?.segment ?? text
 }
 
-/** Clicks on the code's glyphs land inside it; clicks on its padding or past it land outside. */
+/** Clicks on a mark's glyphs land inside it; clicks on its padding or past it land outside. */
 function insideAt(view: EditorView, edge: Edge, x: number) {
   const { node } = view.domAtPos(edge.end ? edge.pos - 1 : edge.pos + 1)
 
