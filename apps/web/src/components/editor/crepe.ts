@@ -1,9 +1,7 @@
 import { Crepe } from '@milkdown/crepe'
 import { editorViewOptionsCtx } from '@milkdown/kit/core'
+import { uploadConfig } from '@milkdown/kit/plugin/upload'
 import { inlineCodeInputRule } from '@milkdown/kit/preset/commonmark'
-
-import { toastManager } from '@/components/ui/toast'
-import { uploadImage } from '@/utils/uploads.functions'
 
 import { alertCommands } from './alert'
 import { bracketPairs } from './bracket-pairs'
@@ -12,6 +10,7 @@ import { codeCopyFeedback, linkCopyFeedback } from './copy-feedback'
 import { emailSyntax } from './email-syntax'
 import { failedImages } from './failed-images'
 import { createFeatureConfigs, features } from './features'
+import { uploadImageFile, uploadImages } from './image-upload'
 import { backtickPairs, innermostInlineCode } from './inline-code'
 import { languagePickerKeys } from './language-picker'
 import { linkHoverPreview } from './link-preview'
@@ -56,6 +55,10 @@ export function createCrepe(
 
   withMarkdownDialect(crepe.editor)
     .config((ctx) => {
+      ctx.update(uploadConfig.key, config => ({
+        ...config,
+        uploader: uploadImages,
+      }))
       ctx.update(editorViewOptionsCtx, options => ({
         ...options,
         attributes: {
@@ -87,19 +90,4 @@ export function createCrepe(
     .use(changeListener(onChange))
 
   return crepe
-}
-
-async function uploadImageFile(file: File) {
-  const data = new FormData()
-
-  data.set('file', file)
-
-  try {
-    const { url } = await uploadImage({ data })
-
-    return url
-  } catch (error) {
-    toastManager.add({ type: 'error', description: 'Failed to upload image' })
-    throw error
-  }
 }
