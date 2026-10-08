@@ -1,4 +1,5 @@
-import { InitReady, marksCtx, schemaTimerCtx } from '@milkdown/kit/core'
+import { editorViewOptionsCtx, InitReady, marksCtx, schemaTimerCtx } from '@milkdown/kit/core'
+import type { Ctx } from '@milkdown/kit/ctx'
 import { inlineCodeSchema } from '@milkdown/kit/preset/commonmark'
 import { keydownHandler } from '@milkdown/kit/prose/keymap'
 import type { MarkType, Node } from '@milkdown/kit/prose/model'
@@ -22,6 +23,35 @@ export const innermostInlineCode = addTimer(async (ctx) => {
   ])
 }, schemaTimerCtx)
 
+/** Paste literal text inside code before Milkdown's clipboard plugin parses URLs and other Markdown. */
+export function inlineCodePaste(ctx: Ctx) {
+  ctx.update(editorViewOptionsCtx, options => ({
+    ...options,
+    handlePaste: (view, event, slice) => {
+      const { state } = view
+      const { selection } = state
+      const code = inlineCodeSchema.type(ctx)
+      let inside = selection.empty
+        ? !!code.isInSet(state.storedMarks ?? selection.$from.marks())
+        : selection.$from.sameParent(selection.$to)
+
+      if (inside && !selection.empty) {
+        state.doc.nodesBetween(selection.from, selection.to, (node) => {
+          if (node.isInline && (!node.isText || !code.isInSet(node.marks))) inside = false
+        })
+      }
+
+      const text = event.clipboardData?.getData('text/plain')
+
+      if (!view.editable || !inside || !text) return options.handlePaste?.(view, event, slice) ?? false
+
+      view.dispatch(state.tr.insertText(text.replace(/\r\n?/g, '\n')).scrollIntoView())
+
+      return true
+    },
+  }))
+}
+
 /** Types backticks the way Obsidian does: a backtick opens a pair, the closing one is typed over, and a pair edited from the inside becomes inline code once the caret stops touching it. */
 export const backtickPairs = $prose((ctx) => {
   const code = inlineCodeSchema.type(ctx)
@@ -42,6 +72,7 @@ function convertPair(tr: Transaction, pair: Span, code: MarkType) {
   return tr
     .delete(pair.to - 1, pair.to)
     .delete(pair.from, pair.from + 1)
+    .removeMark(pair.from, pair.to - 2)
     .addMark(pair.from, pair.to - 2, code.create())
 }
 

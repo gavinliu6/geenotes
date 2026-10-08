@@ -13,7 +13,7 @@ import { emphasisSyntax } from './emphasis-syntax'
 import { failedImages } from './failed-images'
 import { createFeatureConfigs, features } from './features'
 import { uploadImageFile, uploadImages } from './image-upload'
-import { backtickPairs, innermostInlineCode } from './inline-code'
+import { backtickPairs, inlineCodePaste, innermostInlineCode } from './inline-code'
 import { languagePickerKeys } from './language-picker'
 import { linkHoverPreview } from './link-preview'
 import { linkSyntax } from './link-syntax'
@@ -75,6 +75,7 @@ export function createCrepe(
         },
       }))
     })
+    .config(inlineCodePaste)
     .config(linkHoverPreview)
     .use(failedImages)
     .use(trailingOnLoad)
