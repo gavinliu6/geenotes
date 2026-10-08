@@ -28,7 +28,6 @@ export const emailSchema = $markSchema('email', (ctx) => {
 
   return {
     ...schema,
-    priority: 60,
     excludes: 'email link',
     parseDOM: [{
       tag: 'a[href]',

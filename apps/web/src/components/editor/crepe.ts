@@ -13,7 +13,7 @@ import { emphasisSyntax } from './emphasis-syntax'
 import { failedImages } from './failed-images'
 import { createFeatureConfigs, features } from './features'
 import { uploadImageFile, uploadImages } from './image-upload'
-import { backtickPairs, inlineCodePaste, innermostInlineCode } from './inline-code'
+import { backtickPairs, inlineCodePaste } from './inline-code'
 import { languagePickerKeys } from './language-picker'
 import { linkHoverPreview } from './link-preview'
 import { linkSyntax } from './link-syntax'
@@ -88,7 +88,6 @@ export function createCrepe(
     .use(supSubCommands)
     .use(alertCommands)
     .use(quoteKeymap)
-    .use(innermostInlineCode)
     .use(backtickPairs)
     .use(bracketPairs)
     .use(emphasisSyntax)

@@ -1,7 +1,7 @@
 import { imageBlockSchema } from '@milkdown/kit/component/image-block'
 import type { Editor } from '@milkdown/kit/core'
-import { remarkStringifyOptionsCtx } from '@milkdown/kit/core'
-import { $remark } from '@milkdown/kit/utils'
+import { InitReady, marksCtx, remarkStringifyOptionsCtx, schemaTimerCtx } from '@milkdown/kit/core'
+import { $remark, addTimer } from '@milkdown/kit/utils'
 import remarkCjkFriendly from 'remark-cjk-friendly'
 import remarkCjkFriendlyGfmStrikethrough from 'remark-cjk-friendly-gfm-strikethrough'
 
@@ -23,6 +23,17 @@ const cjkFriendlyStrikethrough = $remark(
 )
 
 const escapedAutolinks = $remark('escapedAutolinks', () => remarkEscapedAutolinks)
+
+/** Links wrap their formatting in both the DOM and Markdown; code stays innermost because a code span can't hold other inline content. */
+const inlineMarkOrder = addTimer(async (ctx) => {
+  await ctx.wait(InitReady)
+
+  ctx.update(marksCtx, marks => [
+    ...marks.filter(([id]) => id === 'link' || id === 'email'),
+    ...marks.filter(([id]) => id !== 'link' && id !== 'email' && id !== 'inlineCode'),
+    ...marks.filter(([id]) => id === 'inlineCode'),
+  ])
+}, schemaTimerCtx)
 
 /** Milkdown drops images whose title is `null`, which is what remark gives untitled ones. */
 const untitledImages = $remark('untitledImages', () => () => fillImageTitles)
@@ -88,6 +99,7 @@ export function withMarkdownDialect(editor: Editor) {
     .use(cjkFriendlyStrikethrough)
     .use(escapedAutolinks)
     .use(emailMarks)
+    .use(inlineMarkOrder)
     .use(untitledImages)
     .use(imageBlockCaption)
     .use(supSubMarks)

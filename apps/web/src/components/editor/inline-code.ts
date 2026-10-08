@@ -1,4 +1,4 @@
-import { editorViewOptionsCtx, InitReady, marksCtx, schemaTimerCtx } from '@milkdown/kit/core'
+import { editorViewOptionsCtx } from '@milkdown/kit/core'
 import type { Ctx } from '@milkdown/kit/ctx'
 import { inlineCodeSchema } from '@milkdown/kit/preset/commonmark'
 import { keydownHandler } from '@milkdown/kit/prose/keymap'
@@ -6,22 +6,12 @@ import type { MarkType, Node } from '@milkdown/kit/prose/model'
 import type { Command, Transaction } from '@milkdown/kit/prose/state'
 import { PluginKey, TextSelection } from '@milkdown/kit/prose/state'
 import type { EditorView } from '@milkdown/kit/prose/view'
-import { $prose, addTimer } from '@milkdown/kit/utils'
+import { $prose } from '@milkdown/kit/utils'
 
 import type { Span } from './typed-syntax'
 import { convertOnLeave, plainText, wordChar } from './typed-syntax'
 
 const key = new PluginKey<Span | null>('backtickPairs')
-
-/** Registers inline code as the last mark so it renders innermost: a Markdown code span can't hold other inline content, and an outer code mark splits a link around it into separate anchors. */
-export const innermostInlineCode = addTimer(async (ctx) => {
-  await ctx.wait(InitReady)
-
-  ctx.update(marksCtx, marks => [
-    ...marks.filter(([id]) => id !== 'inlineCode'),
-    ...marks.filter(([id]) => id === 'inlineCode'),
-  ])
-}, schemaTimerCtx)
 
 /** Paste literal text inside code before Milkdown's clipboard plugin parses URLs and other Markdown. */
 export function inlineCodePaste(ctx: Ctx) {
