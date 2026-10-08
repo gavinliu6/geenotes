@@ -24,6 +24,12 @@ const theme = EditorView.theme({
     borderLeftWidth: '1px',
     marginLeft: '0',
   },
+  '.cm-content[contenteditable=false]': {
+    caretColor: 'transparent',
+  },
+  '&:has(.cm-content[contenteditable=false]) .cm-cursorLayer, &:has(.cm-content[contenteditable=false]) .cm-dropCursor': {
+    display: 'none',
+  },
   '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
     backgroundColor: 'var(--color-text-selection)',
   },
