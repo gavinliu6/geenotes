@@ -1,3 +1,4 @@
+import { useSuspenseQuery } from '@tanstack/react-query'
 import type { LinkProps } from '@tanstack/react-router'
 import { Link, useMatchRoute } from '@tanstack/react-router'
 import type { LucideIcon } from 'lucide-react'
@@ -12,6 +13,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem
 } from '@/components/ui/sidebar'
+import { noteCountQueryOptions } from '@/data/notes/notes.query'
+import { useCurrentNoteScope } from '@/data/notes/scope'
 
 export function NavMain() {
   return (
@@ -32,7 +35,7 @@ export function NavMain() {
             </SidebarMenuButton>
           </SearchCommand>
         </SidebarMenuItem>
-        <NavLink label="All notes" icon={StickyNotesIcon} to="/notes" />
+        <AllNotesLink />
       </SidebarMenu>
     </SidebarGroup>
   )
@@ -42,6 +45,40 @@ interface NavLinkProps {
   label: string
   icon: LucideIcon
   to: LinkProps['to']
+}
+
+function AllNotesLink() {
+  const matchRoute = useMatchRoute()
+  const scope = useCurrentNoteScope()
+  const onNotes = !!matchRoute({ to: '/notes', fuzzy: true })
+  const { data: noteCount } = useSuspenseQuery(noteCountQueryOptions())
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        href="/notes"
+        render={props => (
+          <Link
+            {...(props as React.ComponentProps<'a'>)}
+            to="/notes"
+            search={{}}
+          />
+        )}
+        isActive={onNotes && scope.kind === 'all'}
+        tooltip="All notes"
+      >
+        <StickyNotesIcon className="text-fg-muted" />
+        <span className="text-fg">All notes</span>
+        <span className="
+          mr-1 ml-auto text-xs text-fg-muted tabular-nums
+          group-data-[collapsible=icon]:hidden
+        "
+        >
+          {noteCount}
+        </span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  )
 }
 
 function NavLink({ label, icon: Icon, to }: NavLinkProps) {

@@ -1,14 +1,61 @@
 import { z } from 'zod'
 
-import type { note } from '@/db/schema'
+import type { folder, note } from '@/db/schema'
 
 export const noteSortBySchema = z.enum(['created-time', 'updated-time', 'title'])
 export const sortDirectionSchema = z.enum(['asc', 'desc'])
+
+export const noteListScopeSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('all') }),
+  z.object({ kind: z.literal('folder'), folderId: z.string().min(1) }),
+])
 
 export const listNotesSchema = z.object({
   sortBy: noteSortBySchema.default('updated-time'),
   direction: sortDirectionSchema.default('desc'),
   cursor: z.string().nullish(),
+  scope: noteListScopeSchema.optional(),
+})
+
+export const FOLDER_NAME_MAX_LENGTH = 80
+export const FOLDER_NAME_TAKEN_MESSAGE = 'A folder with this name already exists.'
+export const FOLDER_UNAVAILABLE_MESSAGE = 'This folder is unavailable.'
+
+export const folderNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Name is required')
+  .max(
+    FOLDER_NAME_MAX_LENGTH,
+    `Name must be ${FOLDER_NAME_MAX_LENGTH} characters or fewer`
+  )
+
+export const createFolderSchema = z.object({
+  name: folderNameSchema,
+})
+
+export const renameFolderSchema = z.object({
+  folderId: z.string().min(1),
+  name: folderNameSchema,
+})
+
+export const deleteFolderSchema = z.object({
+  folderId: z.string().min(1),
+  deleteNotes: z.boolean().optional(),
+})
+
+export const createNoteSchema = z.object({
+  folderId: z.string().min(1).optional(),
+})
+
+export const moveNoteSchema = z.object({
+  noteId: z.string().min(1),
+  folderId: z.string().min(1),
+})
+
+/** Folder list scope lives in the `/notes` search params. An invalid value is dropped. */
+export const notesSearchSchema = z.object({
+  folder: z.string().min(1).optional().catch(undefined),
 })
 
 export const noteIdSchema = z.object({
@@ -98,11 +145,20 @@ export const imageFileSchema = z
 
 export type NoteSortBy = z.infer<typeof noteSortBySchema>
 export type SortDirection = z.infer<typeof sortDirectionSchema>
+export type NoteListScope = z.infer<typeof noteListScopeSchema>
 export type ListNotesParams = z.output<typeof listNotesSchema>
 export type SaveNoteInput = z.input<typeof saveNoteSchema>
 export type NoteChanges = Omit<SaveNoteInput, 'noteId'>
 
 export type Note = typeof note.$inferSelect
-export type NoteListItem = Pick<Note, 'id' | 'title' | 'createdAt' | 'updatedAt'>
+export type NoteListItem = Pick<
+  Note,
+  'id' | 'title' | 'folderId' | 'createdAt' | 'updatedAt'
+>
 export type RecentNoteListItem = NoteListItem & { viewedAt: Date }
 export type SharedNote = Pick<Note, 'id' | 'title' | 'markdown' | 'updatedAt'>
+
+export type Folder = typeof folder.$inferSelect
+export type FolderListItem = Pick<Folder, 'id' | 'name' | 'createdAt' | 'updatedAt'> & {
+  noteCount: number
+}

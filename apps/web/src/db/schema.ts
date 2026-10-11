@@ -4,7 +4,8 @@ import {
   integer,
   primaryKey,
   sqliteTable,
-  text
+  text,
+  uniqueIndex
 } from 'drizzle-orm/sqlite-core'
 import { ulid } from 'ulid'
 
@@ -122,6 +123,29 @@ export const twoFactor = sqliteTable(
   table => [index('two_factor_userId_idx').on(table.userId)]
 )
 
+export const folder = sqliteTable(
+  'folder',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => ulid().toLowerCase()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  table => [
+    uniqueIndex('folder_userId_name_unique').on(table.userId, table.name),
+  ]
+)
+
 export const note = sqliteTable(
   'note',
   {
@@ -131,6 +155,8 @@ export const note = sqliteTable(
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
+    // Null when a note is unfiled. Deleting a folder clears it and keeps the note.
+    folderId: text('folder_id').references(() => folder.id, { onDelete: 'set null' }),
     title: text('title').default('').notNull(),
     markdown: text('markdown').default('').notNull(),
     deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
@@ -147,6 +173,14 @@ export const note = sqliteTable(
     index('note_userId_createdAt_idx').on(table.userId, table.createdAt),
     index('note_userId_updatedAt_idx').on(table.userId, table.updatedAt),
     index('note_userId_deletedAt_idx').on(table.userId, table.deletedAt),
+    // Folder lists, and the notes found when a folder is deleted.
+    index('note_folderId_userId_deletedAt_updatedAt_id_idx').on(
+      table.folderId,
+      table.userId,
+      table.deletedAt,
+      table.updatedAt,
+      table.id
+    ),
   ]
 )
 
@@ -173,6 +207,7 @@ export const userRelations = relations(user, ({ many, one }) => ({
   sessions: many(session),
   accounts: many(account),
   notes: many(note),
+  folders: many(folder),
   noteViews: many(noteView),
   // The plugin keeps a single row per user and updates it in place.
   twoFactor: one(twoFactor, {
@@ -202,10 +237,22 @@ export const twoFactorRelations = relations(twoFactor, ({ one }) => ({
   }),
 }))
 
+export const folderRelations = relations(folder, ({ one, many }) => ({
+  user: one(user, {
+    fields: [folder.userId],
+    references: [user.id],
+  }),
+  notes: many(note),
+}))
+
 export const noteRelations = relations(note, ({ one, many }) => ({
   user: one(user, {
     fields: [note.userId],
     references: [user.id],
+  }),
+  folder: one(folder, {
+    fields: [note.folderId],
+    references: [folder.id],
   }),
   views: many(noteView),
 }))

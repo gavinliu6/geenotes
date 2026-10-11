@@ -1,9 +1,19 @@
 import type { ButtonProps } from '@/components/ui/button'
 import { Button } from '@/components/ui/button'
 import { useCreateNote } from '@/data/notes/notes.mutation'
+import { allNotesScope } from '@/data/notes/scope'
+import type { NoteListScope } from '@/utils/schemas'
 
-export function NewNoteButton({ onPress, ...props }: ButtonProps) {
-  const createNote = useCreateNote()
+interface NewNoteButtonProps extends ButtonProps {
+  scope?: NoteListScope
+}
+
+export function NewNoteButton({
+  onPress,
+  scope = allNotesScope,
+  ...props
+}: NewNoteButtonProps) {
+  const createNote = useCreateNote(scope)
 
   return (
     <Button

@@ -7,6 +7,7 @@ export const noteKeys = {
   details: () => [...noteKeys.all, 'detail'] as const,
   detail: (noteId: string) => [...noteKeys.details(), noteId] as const,
   recent: () => [...noteKeys.all, 'recent'] as const,
+  count: () => [...noteKeys.all, 'count'] as const,
   searches: () => [...noteKeys.all, 'search'] as const,
   search: (query: string) => [...noteKeys.searches(), query] as const,
 }

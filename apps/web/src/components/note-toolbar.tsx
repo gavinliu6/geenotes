@@ -1,12 +1,16 @@
+import { useState } from 'react'
+
 import {
   Copy,
   Ellipsis,
   Link,
   Markdown,
+  MoveFolderInside,
   PageTextEdit,
   PageTextLock,
   Trash
 } from '@/components/icons'
+import { MoveNoteDialog } from '@/components/move-note-dialog'
 import { NoteListDrawer } from '@/components/note-list-drawer'
 import { ShareNoteButton } from '@/components/share-note-button'
 import { Button } from '@/components/ui/button'
@@ -29,7 +33,7 @@ const { indicator, thumb } = switchStyles()
 
 interface NoteToolbarProps {
   className?: string
-  note: Pick<Note, 'id' | 'title' | 'markdown' | 'sharedAt'>
+  note: Pick<Note, 'id' | 'title' | 'markdown' | 'sharedAt' | 'folderId'>
   isLocked: boolean
   onLockedChange: (isLocked: boolean) => void
   onDelete: () => void
@@ -71,6 +75,7 @@ function NoteActions({
   onLockedChange,
   onDelete,
 }: Omit<NoteToolbarProps, 'className'>) {
+  const [moveOpen, setMoveOpen] = useState(false)
   const copy = async (text: string, copied: string, failed: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -101,76 +106,84 @@ function NoteActions({
   }
 
   return (
-    <Menu>
-      <Button
-        variant="quiet"
-        size="sm"
-        isIconOnly
-        aria-label="More actions"
-        className="text-fg-muted"
-      >
-        <Ellipsis />
-      </Button>
-      <Popover placement="bottom end">
-        <MenuContent>
-          <MenuItem textValue="Copy link" onAction={copyLink}>
-            <Link />
-            <MenuItemLabel>Copy link</MenuItemLabel>
-          </MenuItem>
-          <MenuItem textValue="Copy page contents" onAction={copyContents}>
-            <Copy />
-            <MenuItemLabel>Copy page contents</MenuItemLabel>
-          </MenuItem>
-          <MenuItem
-            href={`/notes/${note.id}.md`}
-            target="_blank"
-            textValue="View as Markdown"
-          >
-            <Markdown />
-            <MenuItemLabel>View as Markdown</MenuItemLabel>
-          </MenuItem>
-          <Separator />
-          <MenuSection
-            selectionMode="multiple"
-            selectedKeys={isLocked ? ['read-only'] : []}
-          >
+    <>
+      <Menu>
+        <Button
+          variant="quiet"
+          size="sm"
+          isIconOnly
+          aria-label="More actions"
+          className="text-fg-muted"
+        >
+          <Ellipsis />
+        </Button>
+        <Popover placement="bottom end">
+          <MenuContent>
+            <MenuItem textValue="Copy link" onAction={copyLink}>
+              <Link />
+              <MenuItemLabel>Copy link</MenuItemLabel>
+            </MenuItem>
+            <MenuItem textValue="Copy page contents" onAction={copyContents}>
+              <Copy />
+              <MenuItemLabel>Copy page contents</MenuItemLabel>
+            </MenuItem>
             <MenuItem
-              id="read-only"
-              textValue="Read-only"
-              className="
-                *:data-menu-item-indicator:hidden
-                data-selection-mode:pr-1.5
-              "
-              onAction={() => onLockedChange(!isLocked)}
+              href={`/notes/${note.id}.md`}
+              target="_blank"
+              textValue="View as Markdown"
             >
-              {isLocked ? <PageTextLock /> : <PageTextEdit />}
-              <MenuItemLabel>Read-only</MenuItemLabel>
-              <span
-                aria-hidden
-                data-selected={isLocked || undefined}
-                className={indicator({
-                  size: 'sm',
-                  className: `
+              <Markdown />
+              <MenuItemLabel>View as Markdown</MenuItemLabel>
+            </MenuItem>
+            <Separator />
+            <MenuItem textValue="Move to folder" onAction={() => setMoveOpen(true)}>
+              <MoveFolderInside />
+              <MenuItemLabel>Move to folder…</MenuItemLabel>
+            </MenuItem>
+            <Separator />
+            <MenuSection
+              selectionMode="multiple"
+              selectedKeys={isLocked ? ['read-only'] : []}
+            >
+              <MenuItem
+                id="read-only"
+                textValue="Read-only"
+                className="
+                  *:data-menu-item-indicator:hidden
+                  data-selection-mode:pr-1.5
+                "
+                onAction={() => onLockedChange(!isLocked)}
+              >
+                {isLocked ? <PageTextLock /> : <PageTextEdit />}
+                <MenuItemLabel>Read-only</MenuItemLabel>
+                <span
+                  aria-hidden
+                  data-selected={isLocked || undefined}
+                  className={indicator({
+                    size: 'sm',
+                    className: `
                     ml-auto
                     in-data-focus-visible:not-data-selected:bg-neutral-active
                     in-data-hovered:not-data-selected:bg-neutral-active
                   `,
-                })}
-              >
-                <span
-                  data-selected={isLocked || undefined}
-                  className={thumb({ size: 'sm' })}
-                />
-              </span>
+                  })}
+                >
+                  <span
+                    data-selected={isLocked || undefined}
+                    className={thumb({ size: 'sm' })}
+                  />
+                </span>
+              </MenuItem>
+            </MenuSection>
+            <Separator />
+            <MenuItem variant="danger" textValue="Delete" onAction={confirmDelete}>
+              <Trash />
+              <MenuItemLabel>Delete</MenuItemLabel>
             </MenuItem>
-          </MenuSection>
-          <Separator />
-          <MenuItem variant="danger" textValue="Delete" onAction={confirmDelete}>
-            <Trash />
-            <MenuItemLabel>Delete</MenuItemLabel>
-          </MenuItem>
-        </MenuContent>
-      </Popover>
-    </Menu>
+          </MenuContent>
+        </Popover>
+      </Menu>
+      <MoveNoteDialog note={note} isOpen={moveOpen} onOpenChange={setMoveOpen} />
+    </>
   )
 }

@@ -7,15 +7,24 @@ import {
   SidebarProvider,
   SidebarTrigger
 } from '@/components/ui/sidebar'
+import { folderListQueryOptions } from '@/data/folders/folders.query'
+import { noteCountQueryOptions } from '@/data/notes/notes.query'
 import { getSidebarState, persistSidebarState } from '@/lib/sidebar.functions'
 import { getTimeZone, persistTimeZone } from '@/lib/timezone.functions'
 
 export const Route = createFileRoute('/_authed/_app')({
-  loader: () => ({
-    sidebarOpen: getSidebarState(),
-    timeZone: getTimeZone(),
-    now: Date.now(),
-  }),
+  loader: async ({ context: { queryClient } }) => {
+    await Promise.all([
+      queryClient.ensureQueryData(folderListQueryOptions()),
+      queryClient.ensureQueryData(noteCountQueryOptions()),
+    ])
+
+    return {
+      sidebarOpen: getSidebarState(),
+      timeZone: getTimeZone(),
+      now: Date.now(),
+    }
+  },
   component: AppLayout,
 })
 

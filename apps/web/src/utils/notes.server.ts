@@ -1,8 +1,10 @@
-import { and, asc, desc, eq, gt, isNull, lt, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, gt, isNull, lt, or, sql } from 'drizzle-orm'
+import { ulid } from 'ulid'
 import { z } from 'zod'
 
 import { db } from '@/db'
-import { note, noteView } from '@/db/schema'
+import { folder, note, noteView } from '@/db/schema'
+import { FOLDER_UNAVAILABLE_MESSAGE } from '@/utils/schemas'
 
 import type {
   ListNotesParams,
@@ -30,15 +32,36 @@ interface Cursor {
 
 export async function selectNotes(
   userId: string,
-  { sortBy, direction, cursor }: ListNotesParams
+  { sortBy, direction, cursor, scope }: ListNotesParams
 ) {
+  if (scope?.kind === 'folder') {
+    const owned = await db.query.folder.findFirst({
+      columns: { id: true },
+      where: and(eq(folder.id, scope.folderId), eq(folder.userId, userId)),
+    })
+
+    if (!owned) {
+      return { status: 'unavailable' as const, items: [], nextCursor: null }
+    }
+  }
+
   const order = direction === 'asc' ? asc : desc
+  const inFolder = scope?.kind === 'folder'
+    ? eq(note.folderId, scope.folderId)
+    : undefined
 
   const rows = await db.query.note.findMany({
-    columns: { id: true, title: true, createdAt: true, updatedAt: true },
+    columns: {
+      id: true,
+      title: true,
+      folderId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
     where: and(
       eq(note.userId, userId),
       isNull(note.deletedAt),
+      inFolder,
       cursor
         ? afterCursor(decodeCursor(cursor, sortBy), sortBy, direction)
         : undefined
@@ -51,7 +74,7 @@ export async function selectNotes(
   const items = hasMore ? rows.slice(0, PAGE_SIZE) : rows
   const nextCursor = hasMore ? encodeCursor(rows[PAGE_SIZE - 1], sortBy) : null
 
-  return { items, nextCursor }
+  return { status: 'ok' as const, items, nextCursor }
 }
 
 export function selectNote(userId: string, noteId: string) {
@@ -60,6 +83,7 @@ export function selectNote(userId: string, noteId: string) {
       id: true,
       title: true,
       markdown: true,
+      folderId: true,
       createdAt: true,
       updatedAt: true,
       sharedAt: true,
@@ -72,13 +96,34 @@ export function selectNote(userId: string, noteId: string) {
   })
 }
 
-export async function insertNote(userId: string) {
-  const [row] = await db
-    .insert(note)
-    .values({ userId })
-    .returning({ id: note.id })
+export async function insertNote(userId: string, folderId?: string) {
+  if (!folderId) {
+    const [row] = await db
+      .insert(note)
+      .values({ userId })
+      .returning({ id: note.id, folderId: note.folderId })
 
-  return row
+    return row
+  }
+
+  // The id is chosen here so an INSERT … SELECT still has one, and the folder
+  // predicate is part of the write. A folder deleted after a separate check
+  // cannot leave an unfiled note behind. Other columns use the table defaults.
+  // Drizzle's insert().select() requires every column, in schema order, which
+  // does not match this table after folder_id was added.
+  const id = ulid().toLowerCase()
+  const rows = await db.all<{ id: string, folder_id: string | null }>(sql`
+    insert into ${note} ("id", "user_id", "folder_id")
+    select ${id}, ${userId}, ${folder.id}
+    from ${folder}
+    where ${and(eq(folder.id, folderId), eq(folder.userId, userId))}
+    returning "id", "folder_id"
+  `)
+  const row = rows.at(0)
+
+  if (!row) throw new Error(FOLDER_UNAVAILABLE_MESSAGE)
+
+  return { id: row.id, folderId: row.folder_id }
 }
 
 export async function updateNote(
@@ -99,6 +144,51 @@ export async function updateNote(
     .returning({ id: note.id, updatedAt: note.updatedAt })
 
   return rows.at(0)
+}
+
+export async function moveNote(userId: string, noteId: string, folderId: string) {
+  const rows = await db
+    .update(note)
+    .set({ folderId, updatedAt: sql`updated_at` })
+    .where(and(
+      eq(note.id, noteId),
+      eq(note.userId, userId),
+      isNull(note.deletedAt),
+      exists(
+        db
+          .select({ id: folder.id })
+          .from(folder)
+          .where(and(eq(folder.id, folderId), eq(folder.userId, userId)))
+      )
+    ))
+    .returning({ id: note.id, folderId: note.folderId })
+  const row = rows.at(0)
+
+  if (row) return row
+
+  const existing = await db.query.note.findFirst({
+    columns: { id: true },
+    where: and(
+      eq(note.id, noteId),
+      eq(note.userId, userId),
+      isNull(note.deletedAt)
+    ),
+  })
+
+  if (!existing) return null
+
+  throw new Error(FOLDER_UNAVAILABLE_MESSAGE)
+}
+
+export async function selectNoteCount(userId: string) {
+  const [row] = await db
+    .select({
+      noteCount: sql<number>`count(${note.id})`.mapWith(Number),
+    })
+    .from(note)
+    .where(and(eq(note.userId, userId), isNull(note.deletedAt)))
+
+  return row.noteCount
 }
 
 export async function hardDeleteNote(userId: string, noteId: string) {
@@ -122,7 +212,13 @@ export function selectMatchingNotes(userId: string, query: string) {
   const markdownMatches = sql`${note.markdown} like ${pattern} escape '\\'`
 
   return db.query.note.findMany({
-    columns: { id: true, title: true, createdAt: true, updatedAt: true },
+    columns: {
+      id: true,
+      title: true,
+      folderId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
     where: and(
       eq(note.userId, userId),
       isNull(note.deletedAt),
@@ -138,6 +234,7 @@ export function selectRecentNotes(userId: string) {
     .select({
       id: note.id,
       title: note.title,
+      folderId: note.folderId,
       createdAt: note.createdAt,
       updatedAt: note.updatedAt,
       viewedAt: noteView.viewedAt,

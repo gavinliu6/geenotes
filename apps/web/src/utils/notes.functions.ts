@@ -6,19 +6,29 @@ import { ensureSession } from '@/lib/auth.functions'
 import {
   hardDeleteNote,
   insertNote,
+  moveNote as moveNoteRecord,
   selectMatchingNotes,
   selectNote,
+  selectNoteCount,
   selectNotes,
   selectRecentNotes,
   updateNote,
   upsertNoteView
 } from './notes.server'
 import {
+  createNoteSchema,
   listNotesSchema,
+  moveNoteSchema,
   noteIdSchema,
   saveNoteSchema,
   searchNotesSchema
 } from './schemas'
+
+export const getNoteCount = createServerFn({ method: 'GET' }).handler(async () => {
+  const session = await ensureSession()
+
+  return selectNoteCount(session.user.id)
+})
 
 export const listNotes = createServerFn({ method: 'GET' })
   .validator(listNotesSchema)
@@ -55,13 +65,24 @@ export const listRecentNotes = createServerFn({ method: 'GET' }).handler(
   }
 )
 
-export const createNote = createServerFn({ method: 'POST' }).handler(
-  async () => {
+export const createNote = createServerFn({ method: 'POST' })
+  .validator(createNoteSchema)
+  .handler(async ({ data }) => {
     const session = await ensureSession()
 
-    return insertNote(session.user.id)
-  }
-)
+    return insertNote(session.user.id, data.folderId)
+  })
+
+export const moveNote = createServerFn({ method: 'POST' })
+  .validator(moveNoteSchema)
+  .handler(async ({ data }) => {
+    const session = await ensureSession()
+    const note = await moveNoteRecord(session.user.id, data.noteId, data.folderId)
+
+    if (!note) throw notFound()
+
+    return note
+  })
 
 export const saveNote = createServerFn({ method: 'POST' })
   .validator(saveNoteSchema)

@@ -16,9 +16,11 @@ import {
   useSidebar
 } from '@/components/ui/sidebar'
 import { Tooltip, TooltipContent } from '@/components/ui/tooltip'
+import { useCurrentNoteScope } from '@/data/notes/scope'
 import type { AuthUser } from '@/lib/auth-types'
 import { cn } from '@/lib/utils'
 
+import { NavFolders } from './nav-folders'
 import { NavMain } from './nav-main'
 import { UserMenu } from './user-menu'
 
@@ -29,6 +31,7 @@ interface AppSidebarProps {
 export function AppSidebar({ user }: AppSidebarProps) {
   const router = useRouter()
   const { setOpenMobile } = useSidebar()
+  const scope = useCurrentNoteScope()
 
   useEffect(
     () => router.subscribe('onBeforeNavigate', () => setOpenMobile(false)),
@@ -53,6 +56,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           >
             <Tooltip>
               <NewNoteButton
+                scope={scope}
                 variant="primary"
                 size="sm"
                 isIconOnly
@@ -67,6 +71,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain />
+        <NavFolders />
       </SidebarContent>
       <SidebarFooter className="relative">
         <CollapseButton className="absolute right-px bottom-px" />

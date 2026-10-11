@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { FileQuestionIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -16,7 +16,8 @@ import {
   EmptyTitle
 } from '@/components/ui/empty'
 import { useDeleteNote, useRecordNoteView } from '@/data/notes/notes.mutation'
-import { noteQueryOptions } from '@/data/notes/notes.query'
+import { noteListQueryOptions, noteQueryOptions } from '@/data/notes/notes.query'
+import { getNoteListSort } from '@/lib/note-list.functions'
 import {
   getNoteFullWidth,
   persistNoteFullWidth
@@ -25,10 +26,30 @@ import { cn } from '@/lib/utils'
 import { getDisplayTitle } from '@/utils/notes'
 
 export const Route = createFileRoute('/_authed/_app/notes/$noteId')({
-  loader: async ({ context: { queryClient }, params }) => {
+  loaderDeps: ({ search }) => ({ folder: search.folder }),
+  loader: async ({ context: { queryClient }, params, deps }) => {
     const note = await queryClient.ensureQueryData(
       noteQueryOptions(params.noteId)
     )
+
+    if (deps.folder && note.folderId !== deps.folder) {
+      const list = await queryClient.ensureInfiniteQueryData(
+        noteListQueryOptions({
+          ...getNoteListSort(),
+          scope: { kind: 'folder', folderId: deps.folder },
+        })
+      )
+      const unavailable = list.pages[0]?.status === 'unavailable'
+
+      if (!unavailable) {
+        throw redirect({
+          to: '/notes/$noteId',
+          params: { noteId: params.noteId },
+          search: {},
+          replace: true,
+        })
+      }
+    }
 
     return { title: note.title, isFullWidth: getNoteFullWidth() }
   },

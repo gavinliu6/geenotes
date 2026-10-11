@@ -8,6 +8,7 @@ dist-ssr
 .tanstack
 .wrangler
 .cloudflare
+.playwright-mcp
 .output
 .vinxi
 __unconfig*

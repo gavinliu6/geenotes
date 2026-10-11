@@ -1,6 +1,10 @@
-import type { NoteSortBy, SortDirection } from '@/utils/schemas'
+import type { NoteListScope, NoteSortBy, SortDirection } from '@/utils/schemas'
 
-export interface NoteListQuery {
+export interface NoteListSort {
   sortBy: NoteSortBy
   direction: SortDirection
+}
+
+export interface NoteListQuery extends NoteListSort {
+  scope: NoteListScope
 }

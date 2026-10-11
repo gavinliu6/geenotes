@@ -176,7 +176,7 @@ const sidebarVariants = tv({
         data-show-on-hover:focus-within:opacity-100
         md:after:hidden
         data-show-on-hover:md:opacity-0
-        [&>svg]:size-4 [&>svg]:shrink-0
+        [&>svg]:size-3.5 [&>svg]:shrink-0
       `,
     menuBadge:
       `

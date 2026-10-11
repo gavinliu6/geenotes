@@ -112,6 +112,7 @@ function NoteCard({ note, tint, label }: NoteCardProps) {
           {...(props as React.ComponentProps<'a'>)}
           to="/notes/$noteId"
           params={{ noteId: note.id }}
+          search={{}}
         />
       )}
       className="

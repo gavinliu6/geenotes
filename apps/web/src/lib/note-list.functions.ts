@@ -2,8 +2,8 @@ import { createIsomorphicFn } from '@tanstack/react-start'
 import { getCookie } from '@tanstack/react-start/server'
 import { z } from 'zod'
 
-import { defaultNoteListQuery } from '@/data/notes/notes.query'
-import type { NoteListQuery } from '@/data/notes/types'
+import { defaultNoteListSort } from '@/data/notes/notes.query'
+import type { NoteListSort } from '@/data/notes/types'
 import { noteSortBySchema, sortDirectionSchema } from '@/utils/schemas'
 
 const NOTE_SORT_COOKIE_NAME = 'note_sort'
@@ -23,14 +23,14 @@ export const getNoteListSort = createIsomorphicFn()
   })
 
 /** Persists the note list sort for `getNoteListSort` to pick up. */
-export function persistNoteListSort({ sortBy, direction }: NoteListQuery) {
+export function persistNoteListSort({ sortBy, direction }: NoteListSort) {
   document.cookie = `${NOTE_SORT_COOKIE_NAME}=${sortBy}:${direction}; path=/; max-age=${NOTE_SORT_COOKIE_MAX_AGE}; SameSite=Lax`
 }
 
-function parseNoteListSort(value?: string): NoteListQuery {
+function parseNoteListSort(value?: string): NoteListSort {
   const result = noteSortCookieSchema.safeParse(value?.split(':'))
 
-  if (!result.success) return defaultNoteListQuery
+  if (!result.success) return defaultNoteListSort
 
   const [sortBy, direction] = result.data
 

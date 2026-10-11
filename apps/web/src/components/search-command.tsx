@@ -38,6 +38,7 @@ import {
   noteSearchQueryOptions,
   recentNoteListQueryOptions
 } from '@/data/notes/notes.query'
+import { allNotesScope } from '@/data/notes/scope'
 import { getDisplayTitle } from '@/utils/notes'
 import type { NoteListItem } from '@/utils/schemas'
 
@@ -92,7 +93,11 @@ function SearchPalette({ onClose }: { onClose: () => void }) {
   const typed = inputValue.trim()
   const { data: recentlyViewed } = useQuery(recentNoteListQueryOptions())
   const { data: edited } = useInfiniteQuery(
-    noteListQueryOptions({ sortBy: 'updated-time', direction: 'desc' })
+    noteListQueryOptions({
+      sortBy: 'updated-time',
+      direction: 'desc',
+      scope: allNotesScope,
+    })
   )
   const { data: matches, isPlaceholderData, isFetching } = useQuery({
     ...noteSearchQueryOptions(term),
@@ -150,6 +155,7 @@ function SearchPalette({ onClose }: { onClose: () => void }) {
           void navigate({
             to: '/notes/$noteId',
             params: { noteId: String(key) },
+            search: {},
           })
         }}
         renderEmptyState={() => (
