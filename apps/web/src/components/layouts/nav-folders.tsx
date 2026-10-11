@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link, useMatchRoute } from '@tanstack/react-router'
-import { EllipsisIcon, FolderIcon, FolderOpenIcon, FolderPlusIcon } from 'lucide-react'
+import { EllipsisIcon, FolderClosedIcon, FolderOpenIcon, FolderPlusIcon } from 'lucide-react'
 import type * as React from 'react'
 import { useState } from 'react'
 
@@ -57,7 +57,7 @@ export function NavFolders() {
               onPress={() => setCreateOpen(true)}
             >
               <FolderPlusIcon className="text-fg-muted" />
-              <span>Add folder</span>
+              <span>New folder</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -101,7 +101,7 @@ function FolderRow({ folder, isActive, onRename, onDelete }: FolderRowProps) {
   const matchRoute = useMatchRoute()
   const onNotes = !!matchRoute({ to: '/notes', fuzzy: true })
   const active = onNotes && isActive
-  const FolderGlyph = active ? FolderOpenIcon : FolderIcon
+  const FolderGlyph = active ? FolderOpenIcon : FolderClosedIcon
 
   return (
     // The action keeps a fixed slot to the left of the count. Hover reveals
