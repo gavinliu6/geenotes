@@ -10,12 +10,6 @@ import { emailMarks } from './email'
 import { remarkEscapedAutolinks } from './escaped-autolinks'
 import { supSubMarks } from './sup-sub'
 
-interface MdastNode {
-  type: string
-  title?: string | null
-  children?: MdastNode[]
-}
-
 const cjkFriendly = $remark('remarkCjkFriendly', () => remarkCjkFriendly)
 const cjkFriendlyStrikethrough = $remark(
   'remarkCjkFriendlyGfmStrikethrough',
@@ -34,14 +28,6 @@ const inlineMarkOrder = addTimer(async (ctx) => {
     ...marks.filter(([id]) => id === 'inlineCode'),
   ])
 }, schemaTimerCtx)
-
-/** Milkdown drops images whose title is `null`, which is what remark gives untitled ones. */
-const untitledImages = $remark('untitledImages', () => () => fillImageTitles)
-
-function fillImageTitles(node: MdastNode) {
-  if (node.type === 'image' || node.type === 'image-block') node.title ??= ''
-  node.children?.forEach(fillImageTitles)
-}
 
 /** Crepe shows the Markdown title as the caption; notes use the alt text for that and keep the title only to write it back. */
 const imageBlockCaption = imageBlockSchema.extendSchema(prev => (ctx) => {
@@ -64,7 +50,8 @@ const imageBlockCaption = imageBlockSchema.extendSchema(prev => (ctx) => {
         state.addNode(type, {
           src: node.url,
           caption: node.alt,
-          title: node.title,
+          // An omitted title is null in mdast, and this attribute must be a string.
+          title: node.title ?? '',
         })
       },
     },
@@ -100,7 +87,6 @@ export function withMarkdownDialect(editor: Editor) {
     .use(escapedAutolinks)
     .use(emailMarks)
     .use(inlineMarkOrder)
-    .use(untitledImages)
     .use(imageBlockCaption)
     .use(supSubMarks)
     .use(alertNode)
