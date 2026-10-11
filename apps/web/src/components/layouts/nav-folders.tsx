@@ -146,7 +146,7 @@ function FolderRow({ folder, isActive, onRename, onDelete }: FolderRowProps) {
         >
           <EllipsisIcon />
         </SidebarMenuAction>
-        <Popover placement="bottom end">
+        <Popover placement="bottom start">
           <MenuContent aria-label={`Actions for ${folder.name}`}>
             <MenuItem textValue="Rename" onAction={onRename}>
               <MenuItemLabel>Rename</MenuItemLabel>
