@@ -1,5 +1,5 @@
 import { Link as RouterLink } from '@tanstack/react-router'
-import { FolderIcon } from 'lucide-react'
+import { FolderClosedIcon } from 'lucide-react'
 import type * as React from 'react'
 
 import { LinkButton } from '@/components/ui/button'
@@ -17,7 +17,7 @@ export function FolderUnavailable() {
     <Empty>
       <EmptyHeader>
         <EmptyMedia variant="icon">
-          <FolderIcon />
+          <FolderClosedIcon />
         </EmptyMedia>
         <EmptyTitle>Folder unavailable</EmptyTitle>
         <EmptyDescription>

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { CheckIcon, FolderIcon } from 'lucide-react'
+import { CheckIcon, FolderClosedIcon } from 'lucide-react'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -74,7 +74,7 @@ export function MoveNoteDialog({ note, isOpen, onOpenChange }: MoveNoteDialogPro
                     aria-pressed={selected}
                     onPress={() => void choose(folder.id)}
                   >
-                    <FolderIcon />
+                    <FolderClosedIcon />
                     <span className="min-w-0 flex-1 truncate text-left">{folder.name}</span>
                     {selected && <CheckIcon className="ml-auto text-fg-muted" />}
                   </Button>
